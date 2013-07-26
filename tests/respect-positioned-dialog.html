@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<meta charset='utf-8'>
+<head>
+<script src="../dialog-polyfill.js"></script>
+<link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
+<style>
+dialog {
+  display: none;
+  height: 50px;
+  width: 50px;
+  padding: 0;
+  margin: 0;
+}
+
+dialog.left {
+  top: 100px;
+  left: 100px;
+}
+
+#middle {
+  top: 100px;
+  left: 200px;
+}
+</style>
+</head>
+<body>
+<p>Test that dialogs with an explicit static position don't get auto-centered.
+The test passes if there are three boxes aligned in a single row.</p>
+<div id="console"></div>
+<dialog id="left" class="left"></dialog>
+<dialog id="middle"></dialog>
+<dialog id="right"></dialog>
+<script>
+function writeToConsole(s) {
+  var console = document.getElementById('console');
+  var span = document.createElement('span');
+  span.textContent = s;
+  console.appendChild(span);
+  console.appendChild(document.createElement('br'));
+}
+
+var dialogs = document.querySelectorAll('dialog');
+for (var i = 0; i < dialogs.length; ++i)
+  dialogPolyfill.registerDialog(dialogs[i]);
+
+var leftDialog = document.getElementById('left');
+leftDialog.show();
+
+var middleDialog = document.getElementById('middle');
+middleDialog.show();
+
+var rightDialog = document.getElementById('right');
+rightDialog.style.top = '100px';
+rightDialog.style.left = '300px';
+rightDialog.show();
+</script>
+</body>
+</html>

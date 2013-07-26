@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<meta charset='utf-8'>
+<head>
+<script src="../dialog-polyfill.js"></script>
+<link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
+<style>
+dialog {
+  width: 100px;
+}
+</style>
+</head>
+<body>
+<p>Test for modal dialog. The test passes if you can click on "Click me" button,
+but can't click or tab to the "Can't click me!" button</p>
+<div id="console"></div>
+<dialog>
+  <button id="dialog-button">Click me</button>
+</dialog>
+<button id="inert-button">Can't click me</button>
+<script>
+function writeToConsole(s) {
+  var console = document.getElementById('console');
+  var span = document.createElement('span');
+  span.textContent = s;
+  console.appendChild(span);
+  console.appendChild(document.createElement('br'));
+}
+
+var dialog = document.querySelector('dialog');
+dialogPolyfill.registerDialog(dialog);
+dialog.showModal();
+
+var dialogButton = document.getElementById('dialog-button');
+dialogButton.addEventListener('click', function(e) {
+  writeToConsole("SUCCESS: dialog's button was clicked");
+});
+
+var inertButton = document.getElementById('inert-button');
+inertButton.addEventListener('click', function(e) {
+  writeToConsole('FAIL: inert button was clicked');
+});
+</script>
+</body>
+</html>

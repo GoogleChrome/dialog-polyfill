@@ -1,0 +1,16 @@
+dialog {
+  position: absolute;
+  left: 0; right: 0;
+  margin: auto;
+  border: solid;
+  padding: 1em;
+  background: white;
+  color: black;
+
+  display: none;
+}
+
+.backdrop {
+  position: absolute;
+  background: rgba(0,0,0,0.1);
+}

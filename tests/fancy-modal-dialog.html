@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../dialog-polyfill.js"></script>
+<link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
+<style>
+#close-button {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    height: 14px;
+    width: 14px;
+    margin: 0;
+    background-image: url('resources/close_dialog.png');
+}
+
+#close-button:hover {
+    background-image: url('resources/close_dialog_hover.png');
+}
+
+dialog {
+    width: 50%;
+    -webkit-border-radius: 3px;
+    -webkit-box-orient: vertical;
+    opacity: 0;
+    background: white;
+    box-shadow: 0 4px 23px 5px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0,0,0,0.15);
+    color: #333;
+    min-width: 400px;
+    padding: 0;
+    z-index: 100;
+    border: 0;
+    padding: 15px;
+}
+
+dialog + .backdrop {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+dialog.no-backdrop + .backdrop {
+    display: none;
+}
+
+.dialog-setting {
+    margin: 30px;
+}
+
+/* keyframes used to pulse the overlay */
+@-webkit-keyframes pulse {
+ 0% {
+   -webkit-transform: scale(1);
+ }
+ 40% {
+   -webkit-transform: scale(1.05);
+  }
+ 60% {
+   -webkit-transform: scale(1.05);
+  }
+ 100% {
+   -webkit-transform: scale(1);
+ }
+}
+
+.pulse {
+  -webkit-animation-duration: 180ms;
+  -webkit-animation-iteration-count: 1;
+  -webkit-animation-name: pulse;
+  -webkit-animation-timing-function: ease-in-out;
+}
+#messages {
+    background-color: red;
+}
+body {
+   font-family: sans-serif;
+}
+
+#open-button {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  background-color: lightgray;
+  border: 1px solid;
+  margin: 10px;
+  padding: 15px;
+}
+
+#open-button:active {
+  background-color: lime;
+  margin: 9px;
+}
+
+#backdrop {
+    display: none;
+    position: fixed;
+    top:0;
+    right:0;
+    bottom:0;
+    left:0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10;
+}
+.post {
+    margin: 10px;
+    padding: 5px;
+    border: 2px solid;
+}
+
+.post-buttons {
+    margin: 5px;
+    text-align: right;
+}
+.post-button:hover {
+    color: green;
+    font-weight: bold;
+}
+</style>
+<body>
+<div id="messages"></div>
+<dialog id="dialog">
+    <h3>Reshare</h3>
+    <input type="text" style="width: 75%" value="I am resharing this."><br>
+    <div class="dialog-setting">
+        <input id="click-outside-to-close" type="checkbox">
+        <label for="click-outside-to-close">Close dialog upon clicking outside</label>
+    </div>
+    <div class="dialog-setting">
+        <input id="enable-backdrop" type="checkbox" checked>
+        <label for="enable-backdrop">Enable ::backdrop</label>
+    </div>
+    <div id="close-button"></div>
+</dialog>
+<div id="post-container"></div>
+<script>
+var dialog = document.getElementById('dialog');
+dialogPolyfill.registerDialog(dialog);
+
+function createPostButton(container, text) {
+   var link = document.createElement('a');
+   link.href = 'javascript:void(0)';
+   link.textContent = text;
+   link.className = 'post-button';
+   container.appendChild(link);
+   var span = document.createElement('span');
+   span.textContent = ' ';
+   container.appendChild(span);
+   return link;
+}
+
+SampleText = 'From this spot I rise not, valiant knight, until your ' +
+             'courtesy grants me the boon I seek, one that will redound ' +
+             'to your praise and the benefit of the human race.';
+
+function createPost(container) {
+    var post = document.createElement('div');
+    post.className = 'post';
+    var postContent = document.createElement('div');
+    postContent.className = 'post-content';
+    postContent.textContent = SampleText;
+    post.appendChild(postContent);
+    var postButtons = document.createElement('div');
+    postButtons.className = 'post-buttons';
+    post.appendChild(postButtons);
+    var reshare = createPostButton(postButtons, 'Reshare');
+    reshare.addEventListener('click', openDialog);
+    var reply = createPostButton(postButtons, 'Reply');
+    reply.addEventListener('click', openDialog);
+    createPostButton(postButtons, 'Enjoyed this post');
+
+    container.appendChild(post);
+    return post;
+}
+
+function initPosts() {
+    var container = document.getElementById('post-container');
+    for (var i = 0; i < 25; ++i) {
+       var post = createPost(container);
+    }
+}
+
+function shouldCloseDialogOnClickOutside() {
+    return document.getElementById('click-outside-to-close').checked;
+}
+
+function closeDialog() {
+    if (dialog.open)
+        dialog.close();
+}
+
+function computeCenteredTop(dialog) {
+    dialog.style.top = 'auto';
+    dialog.style.webkitTransition = '';
+    dialog.showModal();
+    var computedTopPx = window.getComputedStyle(dialog).top;
+    var computedTop = parseInt(computedTopPx.substring(0, computedTopPx.length - 2), 10);
+    dialog.close();
+    return computedTop;
+}
+
+function openDialog() {
+    centerTop = computeCenteredTop(dialog);
+    dialog.style.top = window.scrollY + 'px';
+    dialog.style.opacity = 0;
+    dialog.style.webkitTransition = 'all 250ms ease';
+
+    dialog.showModal();
+
+    dialog.style.top = centerTop + 'px';
+    dialog.style.opacity = 1;
+}
+
+function pulseDialog() {
+    dialog.classList.add('pulse');
+    dialog.addEventListener('webkitAnimationEnd', function(e) {
+      dialog.classList.remove('pulse');
+    });
+}
+
+function clickedInDialog(mouseEvent) {
+    var rect = dialog.getBoundingClientRect();
+    return rect.top <= mouseEvent.clientY && mouseEvent.clientY <= rect.top + rect.height
+        && rect.left <= mouseEvent.clientX && mouseEvent.clientX <= rect.left + rect.width;
+}
+
+function handleClickOutsideDialog() {
+    if (!shouldCloseDialogOnClickOutside()) {
+        pulseDialog();
+        return
+    }
+    closeDialog();
+}
+
+document.body.addEventListener('keydown', function(e) {
+    if (e.keyCode == 27)
+        closeDialog();
+});
+
+var enableBackdrop = document.getElementById('enable-backdrop');
+enableBackdrop.addEventListener('change', function(e) {
+    if (document.getElementById('enable-backdrop').checked)
+        dialog.classList.remove('no-backdrop');
+    else
+        dialog.classList.add('no-backdrop');
+
+    // FIXME: Without this ::backdrop is not redrawn. crbug.com/258759
+    dialog.close();
+    dialog.showModal();
+});
+
+var closeButton = document.getElementById('close-button');
+closeButton.addEventListener('click', function(e) { closeDialog(); });
+
+document.body.addEventListener('click', function(e) {
+    if (!dialog.open)
+        return;
+    if (e.target != document.body)
+        return;
+    handleClickOutsideDialog();
+});
+
+dialog.addEventListener('click', function(e) {
+    if (clickedInDialog(e))
+        return;
+    handleClickOutsideDialog();
+});
+initPosts();
+</script>
+</body>
+</html>

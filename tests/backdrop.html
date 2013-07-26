@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<meta charset='utf-8'>
+<head>
+<script src="../dialog-polyfill.js"></script>
+<link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
+<style>
+dialog {
+  height: 100px;
+  width: 100px;
+}
+
+.backdrop {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0,255,0,0.5);
+}
+</style>
+</head>
+<body>
+<p>Test for backdrop. The test passes if you see a green background behind the
+box.</p>
+<div id="console"></div>
+<dialog></dialog>
+<button id="inert-button">Can't click me</button>
+<script>
+function writeToConsole(s) {
+  var console = document.getElementById('console');
+  var span = document.createElement('span');
+  span.textContent = s;
+  console.appendChild(span);
+  console.appendChild(document.createElement('br'));
+}
+
+var dialog = document.querySelector('dialog');
+dialogPolyfill.registerDialog(dialog);
+dialog.showModal();
+</script>
+</body>
+</html>

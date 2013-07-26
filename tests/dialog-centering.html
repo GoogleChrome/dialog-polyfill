@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<meta charset='utf-8'>
+<head>
+<script src="../dialog-polyfill.js"></script>
+<link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
+<style>
+dialog {
+  width: 100px;
+}
+</style>
+</head>
+<body>
+<p>Test that dialog is centered in the viewport. The test passes if you see a
+box in the center of the screen.</p>
+<div id="console"></div>
+<dialog></dialog>
+<script>
+function writeToConsole(s) {
+  var console = document.getElementById('console');
+  var span = document.createElement('span');
+  span.textContent = s;
+  console.appendChild(span);
+  console.appendChild(document.createElement('br'));
+}
+
+function checkCentered(dialog) {
+  var expectedTop = (window.innerHeight - dialog.offsetHeight) / 2;
+  var expectedLeft = (window.innerWidth - dialog.offsetWidth) / 2;
+  var rect = dialog.getBoundingClientRect();
+  if (rect.top == expectedTop && rect.left == expectedLeft) {
+    writeToConsole('SUCCESS');
+  } else {
+    writeToConsole('FAIL: expected dialog top,left to be ' +
+        expectedTop + ',' + expectedLeft + ' and was actually ' +
+        rect.top + ',' + rect.left);
+  }
+}
+
+var dialog = document.querySelector('dialog');
+dialogPolyfill.registerDialog(dialog);
+dialog.show();
+checkCentered(dialog);
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<meta charset='utf-8'>
+<head>
+<script src="../dialog-polyfill.js"></script>
+<link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
+<style>
+body {
+  height: 10000px;
+}
+dialog {
+  width: 100px;
+}
+#console {
+  position: fixed;
+}
+#ruler {
+  position: absolute;
+  left: 0;
+  width: 100%;
+}
+</style>
+</head>
+<body>
+<p>Test that dialog is recentered if reopened. The test passes if you see a
+box in the center of the screen.</p>
+<div id="ruler"></div>
+<div id="console"></div>
+<dialog></dialog>
+<script>
+function writeToConsole(s) {
+  var console = document.getElementById('console');
+  var span = document.createElement('span');
+  span.textContent = s;
+  console.appendChild(span);
+  console.appendChild(document.createElement('br'));
+}
+
+function windowWidthMinusScrollbar() {
+  return document.getElementById('ruler').offsetWidth;
+}
+
+function checkCentered(dialog) {
+  var expectedTop = (window.innerHeight - dialog.offsetHeight) / 2;
+  var expectedLeft = (windowWidthMinusScrollbar() - dialog.offsetWidth) / 2;
+  var rect = dialog.getBoundingClientRect();
+  if (rect.top == expectedTop && rect.left == expectedLeft) {
+    writeToConsole('SUCCESS');
+  } else {
+    writeToConsole('FAIL: expected dialog top,left to be ' +
+        expectedTop + ',' + expectedLeft + ' and was actually ' +
+        rect.top + ',' + rect.left);
+  }
+}
+
+var dialog = document.querySelector('dialog');
+dialogPolyfill.registerDialog(dialog);
+dialog.show();
+dialog.close();
+window.scrollTo(0, 500);
+dialog.show();
+checkCentered(dialog);
+</script>
+</body>
+</html>
