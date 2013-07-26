@@ -3,7 +3,7 @@ dialog-polyfill.js is a polyfill for `<dialog>`.
 `<dialog>` is an element for a popup box in a web page. See
 [more information and demos](http://falken-testing.appspot.com/dialog/index.html)
 and the
-[HTML spec](http://www.whatwg.org/specs/web-apps/current-work/multipage/commands.html#the-dialog-element)
+[HTML spec](http://www.whatwg.org/specs/web-apps/current-work/multipage/commands.html#the-dialog-element).
 
 ### Example
 
