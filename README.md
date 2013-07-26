@@ -1,5 +1,10 @@
 dialog-polyfill.js is a polyfill for `<dialog>`.
 
+`<dialog>` is an element for a popup box in a web page. See
+[more information and demos](http://falken-testing.appspot.com/dialog/index.html)
+and the
+[HTML spec](http://www.whatwg.org/specs/web-apps/current-work/multipage/commands.html#the-dialog-element)
+
 ### Example
 
     <head>
@@ -33,8 +38,10 @@ With the polyfill, you do it like:
 
 ### Known limitations
 
-- Modality isn't bulletproof (you can tab to inert elements)
-- The polyfill `<dialog>` should always be a child of `<body>`
+- Modality isn't bulletproof. For example, you can tab to inert elements.
+- The polyfill `<dialog>` should always be a child of `<body>`.
 - Polyfill top layer stacking can be ruined by playing with z-index.
 - The polyfill `<dialog>` does not retain dynamically set CSS top/bottom values
-upon close
+upon close.
+- Anchored positioning is not implemented. The native `<dialog>` in Chrome
+doesn't have it either.
