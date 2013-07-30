@@ -91,9 +91,9 @@ dialogPolyfill.close = function(retval) {
 }
 
 dialogPolyfill.registerDialog = function(element) {
-  if (element instanceof HTMLDialogElement) {
-    console.error("This browser already supports <dialog>.");
-    return;
+  if (element.show) {
+    console.warn("This browser already supports <dialog>, the polyfill " +
+        "may not work correctly.");
   }
   element.show = dialogPolyfill.showDialog.bind(element, false);
   element.showModal = dialogPolyfill.showDialog.bind(element, true);
