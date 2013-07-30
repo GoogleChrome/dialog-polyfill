@@ -91,6 +91,10 @@ dialogPolyfill.close = function(retval) {
 }
 
 dialogPolyfill.registerDialog = function(element) {
+  if (element instanceof HTMLDialogElement) {
+    console.error("This browser already supports <dialog>.");
+    return;
+  }
   element.show = dialogPolyfill.showDialog.bind(element, false);
   element.showModal = dialogPolyfill.showDialog.bind(element, true);
   element.close = dialogPolyfill.close.bind(element);
@@ -113,7 +117,7 @@ dialogPolyfill.DialogManager = function() {
   this.overlay.style.position = 'fixed';
   this.overlay.style.left = '0px';
   this.overlay.style.top = '0px';
-  this.overlay.style.background = 'rgba(0,0,0,0.0)';
+  this.overlay.style.backgroundColor = 'rgba(0,0,0,0.0)';
 
   this.overlay.addEventListener('click', function(e) {
     var redirectedEvent = document.createEvent('MouseEvents');
