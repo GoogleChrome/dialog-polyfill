@@ -27,8 +27,12 @@ dialogPolyfill.isInlinePositionSetByStylesheet = function(element) {
       continue;
     for (var j = 0; j < cssRules.length; ++j) {
       var rule = cssRules[j];
-      var selectedNodes = document.querySelectorAll(rule.selectorText);
-      if (!dialogPolyfill.inNodeList(selectedNodes, element))
+      var selectedNodes;
+      // Ignore errors on invalid selector texts.
+      try {
+        selectedNodes = document.querySelectorAll(rule.selectorText);
+      } catch(e) {}
+      if (!selectedNodes || !dialogPolyfill.inNodeList(selectedNodes, element))
         continue;
       var cssTop = rule.style.getPropertyValue('top');
       var cssBottom = rule.style.getPropertyValue('bottom');
