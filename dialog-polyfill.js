@@ -27,7 +27,7 @@ dialogPolyfill.isInlinePositionSetByStylesheet = function(element) {
       continue;
     for (var j = 0; j < cssRules.length; ++j) {
       var rule = cssRules[j];
-      var selectedNodes;
+      var selectedNodes = null;
       // Ignore errors on invalid selector texts.
       try {
         selectedNodes = document.querySelectorAll(rule.selectorText);
