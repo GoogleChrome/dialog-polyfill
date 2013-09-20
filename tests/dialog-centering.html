@@ -4,17 +4,12 @@
 <head>
 <script src="../dialog-polyfill.js"></script>
 <link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
-<style>
-dialog {
-  width: 100px;
-}
-</style>
 </head>
 <body>
 <p>Test that dialog is centered in the viewport. The test passes if you see a
 box in the center of the screen.</p>
 <div id="console"></div>
-<dialog></dialog>
+<dialog>Hello</dialog>
 <script>
 function writeToConsole(s) {
   var console = document.getElementById('console');
