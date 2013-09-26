@@ -99,7 +99,7 @@ dialogPolyfill.close = function(retval) {
   var event;
   if (document.createEvent) {
     event = document.createEvent('HTMLEvents');
-    event.initEvent('close',true,true);
+    event.initEvent('close', true, true);
   } else {
     event = new Event('close');
   }
