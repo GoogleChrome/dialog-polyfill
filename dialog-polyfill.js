@@ -97,7 +97,7 @@ dialogPolyfill.close = function(retval) {
 
   // Triggering "close" event for any attached listeners on the <dialog>
   var event;
-  if(document.createEvent) {
+  if (document.createEvent) {
     event = document.createEvent('HTMLEvents');
     event.initEvent('close',true,true);
   } else {
