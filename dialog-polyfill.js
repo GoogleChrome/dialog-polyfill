@@ -90,8 +90,21 @@ dialogPolyfill.close = function(retval) {
     dialogPolyfill.dm.removeDialog(this);
   }
 
-  if (typeof retval != 'undefined')
+  // Triggering "close" event for any attached listeners on the <dialog>
+  var event;
+  if(document.createEvent) {
+    event = document.createEvent('HTMLEvents');
+    event.initEvent('close',true,true);
+  } else {
+    event = new Event('close');
+  }
+  this.dispatchEvent(event);
+
+
+  if (typeof retval != 'undefined') {
+    this.returnValue = retval;
     return retval;
+  }
 }
 
 dialogPolyfill.registerDialog = function(element) {
