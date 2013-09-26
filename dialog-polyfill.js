@@ -79,6 +79,11 @@ dialogPolyfill.close = function(retval) {
   this.open = false;
   this.style.display = 'none';
 
+  // Leave returnValue untouched in case it was set directly on the element
+  if (typeof retval != 'undefined') {
+    this.returnValue = retval;
+  }
+
   // This won't match the native <dialog> exactly because if the user sets top
   // on a centered polyfill dialog, that top gets thrown away when the dialog is
   // closed. Not sure it's possible to polyfill this perfectly.
@@ -90,8 +95,17 @@ dialogPolyfill.close = function(retval) {
     dialogPolyfill.dm.removeDialog(this);
   }
 
-  if (typeof retval != 'undefined')
-    return retval;
+  // Triggering "close" event for any attached listeners on the <dialog>
+  var event;
+  if (document.createEvent) {
+    event = document.createEvent('HTMLEvents');
+    event.initEvent('close', true, true);
+  } else {
+    event = new Event('close');
+  }
+  this.dispatchEvent(event);
+
+  return this.returnValue;
 }
 
 dialogPolyfill.registerDialog = function(element) {
