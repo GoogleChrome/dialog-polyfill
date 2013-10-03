@@ -137,6 +137,49 @@ dialogPolyfill.DialogManager = function() {
   this.overlay.style.top = '0px';
   this.overlay.style.backgroundColor = 'rgba(0,0,0,0.0)';
 
+  // focus constraints to top dialog
+  var self = this;
+  var blurredElement = null;
+  window.addEventListener('blur', function (e) {
+    var currentModalDialog = self.pendingDialogStack[self.pendingDialogStack.length-1];
+    if (currentModalDialog) {
+      // we cannot focus outside of the current dialog, focus on the dialog itself
+      if (e.target == currentModalDialog || currentModalDialog.contains(e.target)) {
+        blurredElement = e.target;
+      }
+      else {
+        blurredElement = null;
+      }
+    }
+    return true;
+  }, true);
+  
+  window.addEventListener('focus', function (e) {
+    var currentModalDialog = self.pendingDialogStack[self.pendingDialogStack.length-1];
+    if (currentModalDialog) {
+      // we need to check for wrapping (comparing position) and cursor resets (window)
+      switch ((e.target == window && 2) || e.target.compareDocumentPosition(currentModalDialog)) {
+        case 2://DOCUMENT_POSITION_PRECEDING:
+        case 16://DOCUMENT_POSITION_CONTAINED_BY:
+          e.target.blur();
+          return false;
+          break;
+        default:
+          if (e.target == blurredElement) {
+            break;
+          }
+          if (e.target != currentModalDialog && !currentModalDialog.contains(e.target)) {
+            // if we just blurred an element, keep that one
+            ;(blurredElement ? blurredElement : currentModalDialog).focus();
+            e.stopPropagation && e.stopPropagation();
+            return false;
+          }
+      }
+    }
+    blurredElement = null;
+    return true;
+  }, true);
+  
   this.overlay.addEventListener('click', function(e) {
     var redirectedEvent = document.createEvent('MouseEvents');
     redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
