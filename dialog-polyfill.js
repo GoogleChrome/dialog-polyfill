@@ -64,7 +64,6 @@ dialogPolyfill.showDialog = function(isModal) {
   }
   this.open = true;
   this.setAttribute('open', 'open');
-  this.style.display = 'block';
 
   if (dialogPolyfill.needsCentering(this))
     dialogPolyfill.reposition(this);
@@ -79,7 +78,6 @@ dialogPolyfill.close = function(retval) {
     throw new InvalidStateError;
   this.open = false;
   this.removeAttribute('open');
-  this.style.display = 'none';
 
   // Leave returnValue untouched in case it was set directly on the element
   if (typeof retval != 'undefined') {
