@@ -18,6 +18,10 @@ dialog {
   display: none;
 }
 
+dialog[open] {
+  display: block;
+}
+
 .backdrop {
   position: absolute;
   background: rgba(0,0,0,0.1);

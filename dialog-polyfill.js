@@ -63,7 +63,7 @@ dialogPolyfill.showDialog = function(isModal) {
     throw 'InvalidStateError: showDialog called on open dialog';
   }
   this.open = true;
-  this.style.display = 'block';
+  this.setAttribute('open', 'open');
 
   if (dialogPolyfill.needsCentering(this))
     dialogPolyfill.reposition(this);
@@ -77,7 +77,7 @@ dialogPolyfill.close = function(retval) {
   if (!this.open)
     throw new InvalidStateError;
   this.open = false;
-  this.style.display = 'none';
+  this.removeAttribute('open');
 
   // Leave returnValue untouched in case it was set directly on the element
   if (typeof retval != 'undefined') {
