@@ -23,7 +23,7 @@ dialog[open] {
 }
 
 .backdrop {
-  position: absolute;
+  position: fixed;
   background: rgba(0,0,0,0.1);
   top: 0;
   bottom: 0;
