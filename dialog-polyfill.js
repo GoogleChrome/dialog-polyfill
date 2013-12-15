@@ -169,6 +169,7 @@ var dialogPolyfill = (function() {
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
     if (this.pendingDialogStack.length == 0) {
       this.unblockDocument();
+      removeEventListenerFn(document, 'keydown', this.cancelDialog);
       return;
     }
     this.blockDocument();
@@ -180,6 +181,21 @@ var dialogPolyfill = (function() {
       var dialog = this.pendingDialogStack[i];
       dialog.dialogPolyfillInfo.backdrop.style.zIndex = zIndex++;
       dialog.style.zIndex = zIndex++;
+    }
+  };
+
+  dialogPolyfill.DialogManager.prototype.cancelDialog = function(event) {
+    if (event.keyCode === 27) {
+      event.preventDefault();
+      event.stopPropagation();
+      var dialog = this.pendingDialogStack.slice(-1)[0];
+      if (dialog) {
+        var cancelEvent = document.createEvent('Event');
+        cancelEvent.initEvent('cancel', true, true);
+        if (dialog.dispatchEvent(cancelEvent)) {
+          dialog.close();
+        }
+      }
     }
   };
 
@@ -199,6 +215,9 @@ var dialogPolyfill = (function() {
     });
     dialog.parentNode.insertBefore(backdrop, dialog.nextSibling);
     dialog.dialogPolyfillInfo.backdrop = backdrop;
+    if (this.pendingDialogStack.length == 0) {
+      addEventListenerFn(document, 'keydown', this.cancelDialog.bind(this));
+    }
     this.pendingDialogStack.push(dialog);
     this.updateStacking();
   };
