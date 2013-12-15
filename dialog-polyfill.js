@@ -2,10 +2,10 @@ var dialogPolyfill = (function() {
 
   var addEventListenerFn = (window.document.addEventListener
       ? function(element, type, fn) { element.addEventListener(type, fn); }
-      : function(element, type, fn) { element.attachEvent('on'+type, fn); });
+      : function(element, type, fn) { element.attachEvent('on' + type, fn); });
   var removeEventListenerFn = (window.document.removeEventListener
       ? function(element, type, fn) { element.removeEventListener(type, fn); }
-      : function(element, type, fn) { element.detachEvent('on'+type, fn); });
+      : function(element, type, fn) { element.detachEvent('on' + type, fn); });
 
   var dialogPolyfill = {};
 
@@ -169,7 +169,6 @@ var dialogPolyfill = (function() {
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
     if (this.pendingDialogStack.length == 0) {
       this.unblockDocument();
-      removeEventListenerFn(document, 'keydown', this.cancelDialog);
       return;
     }
     this.blockDocument();
@@ -185,13 +184,13 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.DialogManager.prototype.cancelDialog = function(event) {
-    if (event.keyCode === 27) {
+    if (event.keyCode === 27 && this.pendingDialogStack.length > 0) {
       event.preventDefault();
       event.stopPropagation();
       var dialog = this.pendingDialogStack.slice(-1)[0];
       if (dialog) {
         var cancelEvent = document.createEvent('Event');
-        cancelEvent.initEvent('cancel', true, true);
+        cancelEvent.initEvent('cancel', false, true);
         if (dialog.dispatchEvent(cancelEvent)) {
           dialog.close();
         }
@@ -215,9 +214,6 @@ var dialogPolyfill = (function() {
     });
     dialog.parentNode.insertBefore(backdrop, dialog.nextSibling);
     dialog.dialogPolyfillInfo.backdrop = backdrop;
-    if (this.pendingDialogStack.length == 0) {
-      addEventListenerFn(document, 'keydown', this.cancelDialog.bind(this));
-    }
     this.pendingDialogStack.push(dialog);
     this.updateStacking();
   };
@@ -232,5 +228,8 @@ var dialogPolyfill = (function() {
     dialog.dialogPolyfillInfo.backdrop = null;
     this.updateStacking();
   };
+  
+  addEventListenerFn(document, 'keydown', dialogPolyfill.dm.cancelDialog.bind(dialogPolyfill.dm));
+
   return dialogPolyfill;
 })();
