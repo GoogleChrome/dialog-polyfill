@@ -77,10 +77,11 @@ var dialogPolyfill = (function() {
     // Find element with `autofocus` attribute or first form control
     var first_form_ctrl = null;
     var first_autofocus = null;
-    var traverse = function(root) {
+    var findElementToFocus = function(root) {
       for (var i = 0; i < root.children.length; i++) {
         var elem = root.children[i];
-        if (first_form_ctrl === null && (
+        if (first_form_ctrl === null &&
+            elem.disabled === false && (
             elem.nodeName == 'BUTTON' ||
             elem.nodeName == 'INPUT'  ||
             elem.nodeName == 'KEYGEN' ||
@@ -91,17 +92,13 @@ var dialogPolyfill = (function() {
         if (first_autofocus === null &&
             elem.getAttribute('autofocus') === '') {
           first_autofocus = elem;
-        }
-
-        if (first_form_ctrl && first_autofocus) {
           break;
-        } else {
-          traverse(elem);
         }
+        findElementToFocus(elem);
       }
     };
 
-    traverse(this);
+    findElementToFocus(this);
 
     if (first_autofocus) {
       first_autofocus.focus();
@@ -157,21 +154,11 @@ var dialogPolyfill = (function() {
       console.warn("This browser already supports <dialog>, the polyfill " +
           "may not work correctly.");
     }
-    var forms = element.getElementsByTagName('form');
-    var found = -1;
-    for (var i = 0; i < forms.length; i++) {
-      if (forms[i].getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
-        found = i;
-        break;
-      }
-    }
-    if (found !== -1) {
-      addEventListenerFn(forms[found], 'click', function(event) {
-        if (event.target.type == 'submit') {
-          element.close(event.target.value);
-        }
-      });
-    }
+    addEventListenerFn(element, 'dialog_submit', function(e) {
+      element.close(e.detail.target.value);
+      e.preventDefault();
+      e.stopPropagation();
+    });
     element.show = dialogPolyfill.showDialog.bind(element, false);
     element.showModal = dialogPolyfill.showDialog.bind(element, true);
     element.close = dialogPolyfill.close.bind(element);
@@ -203,6 +190,30 @@ var dialogPolyfill = (function() {
           e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
       document.body.dispatchEvent(redirectedEvent);
     });
+    addEventListenerFn(window, 'load', function() {
+      var forms = document.getElementsByTagName('form');
+      Array.prototype.forEach.call(forms, function(form) {
+        if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
+          addEventListenerFn(form, 'click', function(e) {
+            if (e.target.type == 'submit') {
+              var event;
+              if (CustomEvent) {
+                event = new CustomEvent('dialog_submit', {
+                  bubbles:  true,
+                  detail:   { target: e.target }
+                });
+              } else {
+                event = document.createEvent('HTMLEvents');
+                event.initEvent('dialog_submit', true, true);
+                event.detail = {target: e.target};
+              }
+              this.dispatchEvent(event);
+              e.preventDefault();
+            }
+          });
+        }
+      });
+    })
   };
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
@@ -238,9 +249,16 @@ var dialogPolyfill = (function() {
       event.preventDefault();
       event.stopPropagation();
       var dialog = this.pendingDialogStack.slice(-1)[0];
+      var cancelEvent;
       if (dialog) {
-        var cancelEvent = document.createEvent('Event');
-        cancelEvent.initEvent('cancel', false, true);
+        if (CustomEvent) {
+          cancelEvent = new CustomEvent('cancel', {
+            bubbles:    false
+          });
+        } else {
+          cancelEvent = document.createEvent('HTMLEvents');
+          cancelEvent.initEvent('cancel', false, true);
+        }
         if (dialog.dispatchEvent(cancelEvent)) {
           dialog.close();
         }
