@@ -122,6 +122,21 @@ var dialogPolyfill = (function() {
       console.warn("This browser already supports <dialog>, the polyfill " +
           "may not work correctly.");
     }
+    var forms = element.getElementsByTagName('form');
+    var found = -1;
+    for (var i = 0; i < forms.length; i++) {
+      if (forms[i].getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
+        found = i;
+        break;
+      }
+    }
+    if (found !== -1) {
+      addEventListenerFn(forms[found], 'click', function(event) {
+        if (event.target.type == 'submit') {
+          element.close(event.target.value);
+        }
+      });
+    }
     element.show = dialogPolyfill.showDialog.bind(element, false);
     element.showModal = dialogPolyfill.showDialog.bind(element, true);
     element.close = dialogPolyfill.close.bind(element);
@@ -228,7 +243,7 @@ var dialogPolyfill = (function() {
     dialog.dialogPolyfillInfo.backdrop = null;
     this.updateStacking();
   };
-  
+
   addEventListenerFn(document, 'keydown', dialogPolyfill.dm.cancelDialog.bind(dialogPolyfill.dm));
 
   return dialogPolyfill;
