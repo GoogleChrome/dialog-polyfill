@@ -74,6 +74,41 @@ var dialogPolyfill = (function() {
     this.open = true;
     this.setAttribute('open', 'open');
 
+    // Find element with `autofocus` attribute or first form control
+    var first_form_ctrl = null;
+    var first_autofocus = null;
+    var traverse = function(root) {
+      for (var i = 0; i < root.children.length; i++) {
+        var elem = root.children[i];
+        if (first_form_ctrl === null && (
+            elem.nodeName == 'BUTTON' ||
+            elem.nodeName == 'INPUT'  ||
+            elem.nodeName == 'KEYGEN' ||
+            elem.nodeName == 'SELECT' ||
+            elem.nodeName == 'TEXTAREA')) {
+          first_form_ctrl = elem;
+        }
+        if (first_autofocus === null &&
+            elem.getAttribute('autofocus') === '') {
+          first_autofocus = elem;
+        }
+
+        if (first_form_ctrl && first_autofocus) {
+          break;
+        } else {
+          traverse(elem);
+        }
+      }
+    };
+
+    traverse(this);
+
+    if (first_autofocus) {
+      first_autofocus.focus();
+    } else if (first_form_ctrl) {
+      first_form_ctrl.focus();
+    }
+
     if (dialogPolyfill.needsCentering(this))
       dialogPolyfill.reposition(this);
     if (isModal) {
