@@ -88,7 +88,7 @@ var dialogPolyfill = (function() {
             elem.nodeName == 'TEXTAREA')) {
           first_form_ctrl = elem;
         }
-        if (elem.getAttribute('autofocus') === '') {
+        if (elem.autofocus) {
           autofocus = elem;
           return;
         }
