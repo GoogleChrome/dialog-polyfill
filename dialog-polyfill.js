@@ -75,30 +75,34 @@ var dialogPolyfill = (function() {
     this.setAttribute('open', 'open');
 
     // Find element with `autofocus` attribute or first form control
+    var first_form_ctrl = null;
     var autofocus = null;
     var findElementToFocus = function(root) {
       for (var i = 0; i < root.children.length; i++) {
         var elem = root.children[i];
-        if (autofocus === null && !elem.disabled && (
+        if (first_form_ctrl === null && !elem.disabled && (
             elem.nodeName == 'BUTTON' ||
             elem.nodeName == 'INPUT'  ||
             elem.nodeName == 'KEYGEN' ||
             elem.nodeName == 'SELECT' ||
             elem.nodeName == 'TEXTAREA')) {
-          autofocus = elem;
+          first_form_ctrl = elem;
         }
         if (elem.getAttribute('autofocus') === '') {
           autofocus = elem;
-          break;
+          return;
         }
         findElementToFocus(elem);
+        if (autofocus !== null) return;
       }
     };
 
     findElementToFocus(this);
 
-    if (autofocus) {
+    if (autofocus !== null) {
       autofocus.focus();
+    } else if (first_form_ctrl !== null) {
+      first_form_ctrl.focus();
     }
 
     if (dialogPolyfill.needsCentering(this))
