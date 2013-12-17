@@ -75,23 +75,20 @@ var dialogPolyfill = (function() {
     this.setAttribute('open', 'open');
 
     // Find element with `autofocus` attribute or first form control
-    var first_form_ctrl = null;
-    var first_autofocus = null;
+    var autofocus = null;
     var findElementToFocus = function(root) {
       for (var i = 0; i < root.children.length; i++) {
         var elem = root.children[i];
-        if (first_form_ctrl === null &&
-            elem.disabled === false && (
+        if (autofocus === null && !elem.disabled && (
             elem.nodeName == 'BUTTON' ||
             elem.nodeName == 'INPUT'  ||
             elem.nodeName == 'KEYGEN' ||
             elem.nodeName == 'SELECT' ||
             elem.nodeName == 'TEXTAREA')) {
-          first_form_ctrl = elem;
+          autofocus = elem;
         }
-        if (first_autofocus === null &&
-            elem.getAttribute('autofocus') === '') {
-          first_autofocus = elem;
+        if (elem.getAttribute('autofocus') === '') {
+          autofocus = elem;
           break;
         }
         findElementToFocus(elem);
@@ -100,10 +97,8 @@ var dialogPolyfill = (function() {
 
     findElementToFocus(this);
 
-    if (first_autofocus) {
-      first_autofocus.focus();
-    } else if (first_form_ctrl) {
-      first_form_ctrl.focus();
+    if (autofocus) {
+      autofocus.focus();
     }
 
     if (dialogPolyfill.needsCentering(this))
@@ -253,7 +248,7 @@ var dialogPolyfill = (function() {
       if (dialog) {
         if (CustomEvent) {
           cancelEvent = new CustomEvent('cancel', {
-            bubbles:    false
+            bubbles: false
           });
         } else {
           cancelEvent = document.createEvent('HTMLEvents');
