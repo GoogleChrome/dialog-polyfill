@@ -74,7 +74,6 @@ var dialogPolyfill = (function() {
     this.open = true;
     this.setAttribute('open', 'open');
 
-    // autofocus only when modal
     if (isModal) {
       // Find element with `autofocus` attribute or first form control
       var first_form_ctrl = null;
