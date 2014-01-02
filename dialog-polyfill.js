@@ -306,7 +306,18 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.DialogManager.prototype.removeDialog = function(dialog) {
-    var index = this.pendingDialogStack.indexOf(dialog);
+		if ('undefined' == typeof Array.prototype.indexOf) {
+			var index = (function(stack, dialog) {
+				for(var i = 0; i < stack.length; i++) {
+					if (stack[i] === dialog) {
+						return i;
+					}
+				}
+				return -1;
+			})(this.pendingDialogStack, dialog);
+		} else {
+			var index = this.pendingDialogStack.indexOf(dialog);
+		}
     if (index == -1)
       return;
     this.pendingDialogStack.splice(index, 1);
