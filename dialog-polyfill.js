@@ -120,6 +120,7 @@ var dialogPolyfill = (function() {
       this.dialogPolyfillInfo.modal = true;
       dialogPolyfill.dm.pushDialog(this);
     }
+		this.style.zoom = 1;
   };
 
   dialogPolyfill.close = function(retval) {
