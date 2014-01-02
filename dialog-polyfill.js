@@ -108,6 +108,13 @@ var dialogPolyfill = (function() {
 
     findElementToFocus(this);
 
+    if (dialogPolyfill.needsCentering(this))
+      dialogPolyfill.reposition(this);
+    if (isModal) {
+      this.dialogPolyfillInfo.modal = true;
+      dialogPolyfill.dm.pushDialog(this);
+    }
+
 		// IE sometimes complains when calling .focus() that it
 		// "Can't move focus to the control because it is invisible, not enabled, or of a type that does not accept the focus."
 		try {
@@ -117,13 +124,6 @@ var dialogPolyfill = (function() {
         first_form_ctrl.focus();
       }
 		} catch(e) {}
-
-    if (dialogPolyfill.needsCentering(this))
-      dialogPolyfill.reposition(this);
-    if (isModal) {
-      this.dialogPolyfillInfo.modal = true;
-      dialogPolyfill.dm.pushDialog(this);
-    }
 		this.style.zoom = 1;
   };
 
