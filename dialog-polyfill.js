@@ -167,9 +167,9 @@ var dialogPolyfill = (function() {
       e.preventDefault();
       e.stopPropagation();
     });
-    element.show = dialogPolyfill.showDialog.bind(element, false);
-    element.showModal = dialogPolyfill.showDialog.bind(element, true);
-    element.close = dialogPolyfill.close.bind(element);
+    element.show = function() { dialogPolyfill.showDialog.call(element, false); }
+    element.showModal = function() { dialogPolyfill.showDialog.call(element, true); }
+    element.close = function(retval) { dialogPolyfill.close.call(element, retval); }
     element.dialogPolyfillInfo = {};
   };
 
@@ -305,7 +305,7 @@ var dialogPolyfill = (function() {
     this.updateStacking();
   };
 
-  addEventListenerFn(document, 'keydown', dialogPolyfill.dm.cancelDialog.bind(dialogPolyfill.dm));
+  addEventListenerFn(document, 'keydown', function(ev) { dialogPolyfill.dm.cancelDialog.call(dialogPolyfill.dm, ev) });
 
   return dialogPolyfill;
 })();
