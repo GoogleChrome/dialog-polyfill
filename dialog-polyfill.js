@@ -283,7 +283,7 @@ var dialogPolyfill = (function() {
     }
 
     var backdrop = document.createElement('div');
-    backdrop.classList.add('backdrop');
+		backdrop.className = 'backdrop';
     addEventListenerFn(backdrop, 'click', function(e) {
       var redirectedEvent = document.createEvent('MouseEvents');
       redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
