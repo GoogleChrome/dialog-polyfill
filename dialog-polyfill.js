@@ -129,7 +129,7 @@ var dialogPolyfill = (function() {
 
   dialogPolyfill.close = function(retval) {
     if (!this.open)
-      throw new InvalidStateError;
+      throw 'InvalidStateError: close called on closed dialog';
     this.open = false;
     this.removeAttribute('open');
 
