@@ -56,9 +56,15 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.needsCentering = function(dialog) {
-    var computedStyle = getComputedStyle(dialog);
-    if (computedStyle.position != 'absolute')
-      return false;
+		if ('undefined' == typeof getComputedStyle) {
+			if (dialog.currentStyle && 'absolute' != dialog.currentStyle['position']) {
+				return false;
+			}
+		} else {
+			var computedStyle = getComputedStyle(dialog);
+			if (computedStyle.position != 'absolute')
+				return false;
+		}
 
     // We must determine whether the top/bottom specified value is non-auto.  In
     // WebKit/Blink, checking computedStyle.top == 'auto' is sufficient, but
