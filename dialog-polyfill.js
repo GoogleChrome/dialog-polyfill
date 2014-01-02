@@ -147,13 +147,15 @@ var dialogPolyfill = (function() {
 
     // Triggering "close" event for any attached listeners on the <dialog>
     var event;
-    if (document.createEvent) {
-      event = document.createEvent('HTMLEvents');
-      event.initEvent('close', true, true);
-    } else {
-      event = new Event('close');
-    }
-    this.dispatchEvent(event);
+		if (this.dispatchEvent) {
+			if (document.createEvent) {
+				event = document.createEvent('HTMLEvents');
+				event.initEvent('close', true, true);
+			} else {
+				event = new Event('close');
+			}
+			this.dispatchEvent(event);
+		}
 
     return this.returnValue;
   };
