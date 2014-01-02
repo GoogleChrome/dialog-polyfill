@@ -199,28 +199,31 @@ var dialogPolyfill = (function() {
       document.body.dispatchEvent(redirectedEvent);
     });
     addEventListenerFn(window, 'load', function() {
-      var forms = document.getElementsByTagName('form');
-      Array.prototype.forEach.call(forms, function(form) {
-        if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
-          addEventListenerFn(form, 'click', function(e) {
-            if (e.target.type == 'submit') {
-              var event;
-              if (CustomEvent) {
-                event = new CustomEvent('dialog_submit', {
-                  bubbles:  true,
-                  detail:   { target: e.target }
-                });
-              } else {
-                event = document.createEvent('HTMLEvents');
-                event.initEvent('dialog_submit', true, true);
-                event.detail = {target: e.target};
-              }
-              this.dispatchEvent(event);
-              e.preventDefault();
-            }
-          });
-        }
-      });
+      var forms = document.getElementsByTagName('form'),
+			i = forms.length;
+			while(i--) {
+				(function(form) {
+					if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
+						addEventListenerFn(form, 'click', function(e) {
+							if (e.target.type == 'submit') {
+								var event;
+								if (CustomEvent) {
+									event = new CustomEvent('dialog_submit', {
+										bubbles:  true,
+										detail:   { target: e.target }
+									});
+								} else {
+									event = document.createEvent('HTMLEvents');
+									event.initEvent('dialog_submit', true, true);
+									event.detail = {target: e.target};
+								}
+								this.dispatchEvent(event);
+								e.preventDefault();
+							}
+						});
+					}
+				})(forms[i]);
+			}
     })
   };
 
