@@ -10,8 +10,11 @@ var dialogPolyfill = (function() {
   var dialogPolyfill = {};
 
   dialogPolyfill.reposition = function(element) {
-    var scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
-    var topValue = scrollTop + (window.innerHeight - element.offsetHeight) / 2;
+    var scrollTop = document.body.scrollTop || document.documentElement.scrollTop,
+		windowHeight = ('undefined' == typeof window.innerHeight) && document.body && document.body.clientHeight ? 
+			document.body.clientHeight :
+			window.innerHeight,
+    topValue = scrollTop + (windowHeight - element.offsetHeight) / 2;
     element.style.top = topValue + 'px';
     element.dialogPolyfillInfo.isTopOverridden = true;
   };
