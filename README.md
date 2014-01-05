@@ -7,34 +7,39 @@ and the
 
 ### Example
 
-    <head>
-      <script src="dialog-polyfill.js"></script>
-      <link rel="stylesheet" type="text/css" href="dialog-polyfill.css">
-    </head>
-    <body>
-      <dialog>I'm a dialog!</dialog>
-      <script>
-        var dialog = document.querySelector('dialog');
-        dialogPolyfill.registerDialog(dialog);
-
-        // Now dialog acts like a native <dialog>.
-        dialog.showModal();
-      </script>
-    </body>
+```html
+<head>
+  <script src="dialog-polyfill.js"></script>
+  <link rel="stylesheet" type="text/css" href="dialog-polyfill.css">
+</head>
+<body>
+  <dialog>I'm a dialog!</dialog>
+  <script>
+    var dialog = document.querySelector('dialog');
+    dialogPolyfill.registerDialog(dialog);
+    // Now dialog acts like a native <dialog>.
+    dialog.showModal();
+  </script>
+</body>
+```
 
 ### ::backdrop
 
 In native `<dialog>`, the backdrop is a pseudo-element:
 
-    #mydialog::backdrop {
-      background-color: green;
-    }
+```css
+#mydialog::backdrop {
+  background-color: green;
+}
+```
 
 With the polyfill, you do it like:
 
-    #mydialog + .backdrop {
-      background-color: green;
-    }
+```css
+#mydialog + .backdrop {
+  background-color: green;
+}
+```
 
 ### Known limitations
 
