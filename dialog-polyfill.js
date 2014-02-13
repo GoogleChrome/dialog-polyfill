@@ -15,6 +15,9 @@ var dialogPolyfill = (function() {
 			document.body.clientHeight :
 			window.innerHeight,
     topValue = scrollTop + (windowHeight - element.offsetHeight) / 2;
+		if (0 > topValue) {
+			topValue = 0;
+		}
     element.style.top = topValue + 'px';
     element.dialogPolyfillInfo.isTopOverridden = true;
   };
