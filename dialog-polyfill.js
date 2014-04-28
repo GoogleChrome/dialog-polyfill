@@ -4,14 +4,23 @@ var dialogPolyfill = (function() {
         element.addEventListener(type, fn);
     } : function(element, type, fn) {
         element.attachEvent('on' + type, fn);
-    });
-    var removeEventListenerFn = (window.document.removeEventListener ? function(element, type, fn) {
-        element.removeEventListener(type, fn);
-    } : function(element, type, fn) {
-        element.detachEvent('on' + type, fn);
-    });
-
-    var dialogPolyfill = {};
+    }),
+        removeEventListenerFn = (window.document.removeEventListener ? function(element, type, fn) {
+            element.removeEventListener(type, fn);
+        } : function(element, type, fn) {
+            element.detachEvent('on' + type, fn);
+        }),
+        dialogPolyfill = {},
+        isDescendant = function(parent, child) {
+            var el = child.parentElement;
+            while (el !== null) {
+                if (el === parent) {
+                    return true;
+                }
+                el = el.parentElement;
+            }
+            return false;
+        };
 
     dialogPolyfill.reposition = function(element) {
         var scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
@@ -98,7 +107,9 @@ var dialogPolyfill = (function() {
                         return;
                     }
                     findElementToFocus(elem);
-                    if (autofocus !== null) return;
+                    if (autofocus !== null) {
+                        return;
+                    }
                 }
             };
 
@@ -111,8 +122,9 @@ var dialogPolyfill = (function() {
             }
         }
 
-        if (dialogPolyfill.needsCentering(this))
+        if (dialogPolyfill.needsCentering(this)) {
             dialogPolyfill.reposition(this);
+        }
         if (isModal) {
             this.dialogPolyfillInfo.modal = true;
             dialogPolyfill.dm.pushDialog(this);
@@ -127,7 +139,7 @@ var dialogPolyfill = (function() {
         this.removeAttribute('open');
 
         // Leave returnValue untouched in case it was set directly on the element
-        if (typeof retval != 'undefined') {
+        if (typeof retval !== 'undefined') {
             this.returnValue = retval;
         }
 
@@ -196,28 +208,32 @@ var dialogPolyfill = (function() {
                 e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
             document.body.dispatchEvent(redirectedEvent);
         });
-        addEventListenerFn(window, 'submit', function(e) {
-            var form = e.target,
+        addEventListenerFn(document.body, 'click', function(e) {
+            var target = e.target,
+                dialogForms = document.querySelectorAll('form[method="dialog"]'),
                 event;
-            if (form.nodeName === "FORM" && form.getAttribute('method') === 'dialog') { // form.method won't return 'dialog'
-                e.preventDefault();
-                if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
-                    event = new CustomEvent('dialog_submit', {
-                        bubbles: true,
-                        detail: {
+
+            // Would another Array method be more performant? e.g. filter, find, reduce?
+            Array.prototype.forEach.call(dialogForms, function(form) {
+                if (target.type === 'submit' && isDescendant(form, target)) {
+                    e.preventDefault();
+                    if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
+                        event = new CustomEvent('dialog_submit', {
+                            bubbles: true,
+                            detail: {
+                                target: e.target
+                            }
+                        });
+                    } else {
+                        event = document.createEvent('HTMLEvents');
+                        event.initEvent('dialog_submit', true, true);
+                        event.detail = {
                             target: e.target
-                        }
-                    });
-                } else {
-                    event = document.createEvent('HTMLEvents');
-                    event.initEvent('dialog_submit', true, true);
-                    event.detail = {
-                        target: e.target
-                    };
+                        };
+                    }
+                    target.dispatchEvent(event);
                 }
-                this.dispatchEvent(event);
-                return false;
-            }
+            });
         });
     };
 
