@@ -65,8 +65,8 @@ var dialogPolyfill = (function() {
         // WebKit/Blink, checking computedStyle.top == 'auto' is sufficient, but
         // Firefox returns the used value. So we do this crazy thing instead: check
         // the inline style and then go through CSS rules.
-        if ((dialog.style.top != 'auto' && dialog.style.top != '') ||
-            (dialog.style.bottom != 'auto' && dialog.style.bottom != ''))
+        if ((dialog.style.top !== 'auto' && dialog.style.top !== '') ||
+            (dialog.style.bottom !== 'auto' && dialog.style.bottom !== ''))
             return false;
         return !dialogPolyfill.isInlinePositionSetByStylesheet(dialog);
     };
@@ -120,8 +120,9 @@ var dialogPolyfill = (function() {
     };
 
     dialogPolyfill.close = function(retval) {
-        if (!this.open)
-            throw new InvalidStateError;
+        if (!this.open) {
+            throw new InvalidStateError();
+        }
         this.open = false;
         this.removeAttribute('open');
 
@@ -198,9 +199,9 @@ var dialogPolyfill = (function() {
         addEventListenerFn(window, 'load', function() {
             var forms = document.getElementsByTagName('form');
             Array.prototype.forEach.call(forms, function(form) {
-                if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
+                if (form.getAttribute('method') === 'dialog') { // form.method won't return 'dialog'
                     addEventListenerFn(form, 'click', function(e) {
-                        if (e.target.type == 'submit') {
+                        if (e.target.type === 'submit') {
                             var event;
                             if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
                                 event = new CustomEvent('dialog_submit', {
@@ -222,7 +223,7 @@ var dialogPolyfill = (function() {
                     });
                 }
             });
-        })
+        });
     };
 
     dialogPolyfill.dm = new dialogPolyfill.DialogManager();
@@ -237,7 +238,7 @@ var dialogPolyfill = (function() {
     };
 
     dialogPolyfill.DialogManager.prototype.updateStacking = function() {
-        if (this.pendingDialogStack.length == 0) {
+        if (this.pendingDialogStack.length === 0) {
             this.unblockDocument();
             return;
         }
