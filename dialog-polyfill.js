@@ -196,33 +196,28 @@ var dialogPolyfill = (function() {
                 e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
             document.body.dispatchEvent(redirectedEvent);
         });
-        addEventListenerFn(window, 'load', function() {
-            var forms = document.getElementsByTagName('form');
-            Array.prototype.forEach.call(forms, function(form) {
-                if (form.getAttribute('method') === 'dialog') { // form.method won't return 'dialog'
-                    addEventListenerFn(form, 'click', function(e) {
-                        if (e.target.type === 'submit') {
-                            var event;
-                            if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
-                                event = new CustomEvent('dialog_submit', {
-                                    bubbles: true,
-                                    detail: {
-                                        target: e.target
-                                    }
-                                });
-                            } else {
-                                event = document.createEvent('HTMLEvents');
-                                event.initEvent('dialog_submit', true, true);
-                                event.detail = {
-                                    target: e.target
-                                };
-                            }
-                            this.dispatchEvent(event);
-                            e.preventDefault();
+        addEventListenerFn(window, 'submit', function(e) {
+            var form = e.target,
+                event;
+            if (form.nodeName === "FORM" && form.getAttribute('method') === 'dialog') { // form.method won't return 'dialog'
+                e.preventDefault();
+                if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
+                    event = new CustomEvent('dialog_submit', {
+                        bubbles: true,
+                        detail: {
+                            target: e.target
                         }
                     });
+                } else {
+                    event = document.createEvent('HTMLEvents');
+                    event.initEvent('dialog_submit', true, true);
+                    event.detail = {
+                        target: e.target
+                    };
                 }
-            });
+                this.dispatchEvent(event);
+                return false;
+            }
         });
     };
 
