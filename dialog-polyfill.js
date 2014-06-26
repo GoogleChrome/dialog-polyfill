@@ -74,6 +74,13 @@ var dialogPolyfill = (function() {
     this.open = true;
     this.setAttribute('open', 'open');
 
+    if (dialogPolyfill.needsCentering(this))
+      dialogPolyfill.reposition(this);
+    if (isModal) {
+      this.dialogPolyfillInfo.modal = true;
+      dialogPolyfill.dm.pushDialog(this);
+    }
+
     if (isModal) {
       // Find element with `autofocus` attribute or first form control
       var first_form_ctrl = null;
@@ -105,13 +112,6 @@ var dialogPolyfill = (function() {
       } else if (first_form_ctrl !== null) {
         first_form_ctrl.focus();
       }
-    }
-
-    if (dialogPolyfill.needsCentering(this))
-      dialogPolyfill.reposition(this);
-    if (isModal) {
-      this.dialogPolyfillInfo.modal = true;
-      dialogPolyfill.dm.pushDialog(this);
     }
   };
 
