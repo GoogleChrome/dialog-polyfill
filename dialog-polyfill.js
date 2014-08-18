@@ -86,7 +86,7 @@ var dialogPolyfill = (function() {
       var first_form_ctrl = null;
       var autofocus = null;
       var findElementToFocus = function(root) {
-        if (!children.length) {
+        if (!root.children) {
           return;
         }
         for (var i = 0; i < root.children.length; i++) {
