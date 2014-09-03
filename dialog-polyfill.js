@@ -254,7 +254,8 @@ var dialogPolyfill = (function() {
       if (dialog) {
         if (CustomEvent) {
           cancelEvent = new CustomEvent('cancel', {
-            bubbles: false
+            bubbles: false,
+            cancelable: true
           });
         } else {
           cancelEvent = document.createEvent('HTMLEvents');
