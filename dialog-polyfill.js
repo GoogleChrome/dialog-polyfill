@@ -150,10 +150,12 @@ var dialogPolyfill = (function() {
     return this.returnValue;
   };
 
-  dialogPolyfill.registerDialog = function(element) {
+  dialogPolyfill.registerDialog = function(element, skipOnSupport) {
     if (element.show) {
+      if (skipOnSupport === true)
+        return;
       console.warn("This browser already supports <dialog>, the polyfill " +
-          "may not work correctly.");
+        "may not work correctly.");
     }
     addEventListenerFn(element, 'dialog_submit', function(e) {
       element.close(e.detail.target.value);
@@ -164,6 +166,29 @@ var dialogPolyfill = (function() {
     element.showModal = dialogPolyfill.showDialog.bind(element, true);
     element.close = dialogPolyfill.close.bind(element);
     element.dialogPolyfillInfo = {};
+
+    var forms = element.getElementsByTagName('form');
+    Array.prototype.forEach.call(forms, function(form) {
+      if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
+        addEventListenerFn(form, 'click', function (e) {
+          if (e.target.type == 'submit') {
+            var event;
+            if (CustomEvent) {
+              event = new CustomEvent('dialog_submit', {
+                bubbles: true,
+                detail: {target: e.target}
+              });
+            } else {
+              event = document.createEvent('HTMLEvents');
+              event.initEvent('dialog_submit', true, true);
+              event.detail = {target: e.target};
+            }
+            this.dispatchEvent(event);
+            e.preventDefault();
+          }
+        });
+      }
+    });
   };
 
   // The overlay is used to simulate how a modal dialog blocks the document. The
@@ -191,30 +216,6 @@ var dialogPolyfill = (function() {
           e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
       document.body.dispatchEvent(redirectedEvent);
     });
-    addEventListenerFn(window, 'load', function() {
-      var forms = document.getElementsByTagName('form');
-      Array.prototype.forEach.call(forms, function(form) {
-        if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
-          addEventListenerFn(form, 'click', function(e) {
-            if (e.target.type == 'submit') {
-              var event;
-              if (CustomEvent) {
-                event = new CustomEvent('dialog_submit', {
-                  bubbles:  true,
-                  detail:   { target: e.target }
-                });
-              } else {
-                event = document.createEvent('HTMLEvents');
-                event.initEvent('dialog_submit', true, true);
-                event.detail = {target: e.target};
-              }
-              this.dispatchEvent(event);
-              e.preventDefault();
-            }
-          });
-        }
-      });
-    })
   };
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
