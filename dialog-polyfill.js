@@ -10,8 +10,14 @@ var dialogPolyfill = (function() {
   var dialogPolyfill = {};
 
   dialogPolyfill.reposition = function(element) {
-    var scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
-    var topValue = scrollTop + (window.innerHeight - element.offsetHeight) / 2;
+    var scrollTop = document.body.scrollTop || document.documentElement.scrollTop,
+    windowHeight = ('undefined' == typeof window.innerHeight) && document.body && document.body.clientHeight ? 
+      document.body.clientHeight :
+      window.innerHeight,
+    topValue = scrollTop + (windowHeight - element.offsetHeight) / 2;
+    if (0 > topValue) {
+      topValue = 0;
+    }
     element.style.top = topValue + 'px';
     element.dialogPolyfillInfo.isTopOverridden = true;
   };
@@ -53,9 +59,15 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.needsCentering = function(dialog) {
-    var computedStyle = getComputedStyle(dialog);
-    if (computedStyle.position != 'absolute')
-      return false;
+    if ('undefined' == typeof getComputedStyle) {
+      if (dialog.currentStyle && 'absolute' != dialog.currentStyle['position']) {
+        return false;
+      }
+    } else {
+      var computedStyle = getComputedStyle(dialog);
+      if (computedStyle.position != 'absolute')
+        return false;
+    }
 
     // We must determine whether the top/bottom specified value is non-auto.  In
     // WebKit/Blink, checking computedStyle.top == 'auto' is sufficient, but
@@ -113,11 +125,22 @@ var dialogPolyfill = (function() {
       this.dialogPolyfillInfo.modal = true;
       dialogPolyfill.dm.pushDialog(this);
     }
+
+    // IE sometimes complains when calling .focus() that it
+    // "Can't move focus to the control because it is invisible, not enabled, or of a type that does not accept the focus."
+    try {
+      if (autofocus !== null) {
+        autofocus.focus();
+      } else if (first_form_ctrl !== null) {
+        first_form_ctrl.focus();
+      }
+    } catch(e) {}
+    this.style.zoom = 1;
   };
 
   dialogPolyfill.close = function(retval) {
     if (!this.open)
-      throw new InvalidStateError;
+      throw 'InvalidStateError: close called on closed dialog';
     this.open = false;
     this.removeAttribute('open');
 
@@ -139,13 +162,15 @@ var dialogPolyfill = (function() {
 
     // Triggering "close" event for any attached listeners on the <dialog>
     var event;
-    if (document.createEvent) {
-      event = document.createEvent('HTMLEvents');
-      event.initEvent('close', true, true);
-    } else {
-      event = new Event('close');
+    if (this.dispatchEvent) {
+      if (document.createEvent) {
+        event = document.createEvent('HTMLEvents');
+        event.initEvent('close', true, true);
+      } else {
+        event = new Event('close');
+      }
+      this.dispatchEvent(event);
     }
-    this.dispatchEvent(event);
 
     return this.returnValue;
   };
@@ -160,9 +185,9 @@ var dialogPolyfill = (function() {
       e.preventDefault();
       e.stopPropagation();
     });
-    element.show = dialogPolyfill.showDialog.bind(element, false);
-    element.showModal = dialogPolyfill.showDialog.bind(element, true);
-    element.close = dialogPolyfill.close.bind(element);
+    element.show = function() { dialogPolyfill.showDialog.call(element, false); }
+    element.showModal = function() { dialogPolyfill.showDialog.call(element, true); }
+    element.close = function(retval) { dialogPolyfill.close.call(element, retval); }
     element.dialogPolyfillInfo = {};
   };
 
@@ -182,7 +207,12 @@ var dialogPolyfill = (function() {
     this.overlay.style.position = 'fixed';
     this.overlay.style.left = '0px';
     this.overlay.style.top = '0px';
-    this.overlay.style.backgroundColor = 'rgba(0,0,0,0.0)';
+    try {
+      this.overlay.style.backgroundColor = 'rgba(0,0,0,0.0)';
+    } catch(e) {
+      this.overlay.style.backgroundColor = '#000';
+      this.overlay.style.filter = 'alpha(opacity=0)';
+    }
 
     addEventListenerFn(this.overlay, 'click', function(e) {
       var redirectedEvent = document.createEvent('MouseEvents');
@@ -192,28 +222,31 @@ var dialogPolyfill = (function() {
       document.body.dispatchEvent(redirectedEvent);
     });
     addEventListenerFn(window, 'load', function() {
-      var forms = document.getElementsByTagName('form');
-      Array.prototype.forEach.call(forms, function(form) {
-        if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
-          addEventListenerFn(form, 'click', function(e) {
-            if (e.target.type == 'submit') {
-              var event;
-              if (CustomEvent) {
-                event = new CustomEvent('dialog_submit', {
-                  bubbles:  true,
-                  detail:   { target: e.target }
-                });
-              } else {
-                event = document.createEvent('HTMLEvents');
-                event.initEvent('dialog_submit', true, true);
-                event.detail = {target: e.target};
+      var forms = document.getElementsByTagName('form'),
+      i = forms.length;
+      while(i--) {
+        (function(form) {
+          if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
+            addEventListenerFn(form, 'click', function(e) {
+              if (e.target.type == 'submit') {
+                var event;
+                if (CustomEvent) {
+                  event = new CustomEvent('dialog_submit', {
+                    bubbles:  true,
+                    detail:   { target: e.target }
+                  });
+                } else {
+                  event = document.createEvent('HTMLEvents');
+                  event.initEvent('dialog_submit', true, true);
+                  event.detail = {target: e.target};
+                }
+                this.dispatchEvent(event);
+                e.preventDefault();
               }
-              this.dispatchEvent(event);
-              e.preventDefault();
-            }
-          });
-        }
-      });
+            });
+          }
+        })(forms[i]);
+      }
     })
   };
 
@@ -273,7 +306,7 @@ var dialogPolyfill = (function() {
     }
 
     var backdrop = document.createElement('div');
-    backdrop.classList.add('backdrop');
+    backdrop.className = 'backdrop';
     addEventListenerFn(backdrop, 'click', function(e) {
       var redirectedEvent = document.createEvent('MouseEvents');
       redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
@@ -288,7 +321,18 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.DialogManager.prototype.removeDialog = function(dialog) {
-    var index = this.pendingDialogStack.indexOf(dialog);
+    if ('undefined' == typeof Array.prototype.indexOf) {
+      var index = (function(stack, dialog) {
+        for(var i = 0; i < stack.length; i++) {
+          if (stack[i] === dialog) {
+            return i;
+          }
+        }
+        return -1;
+      })(this.pendingDialogStack, dialog);
+    } else {
+      var index = this.pendingDialogStack.indexOf(dialog);
+    }
     if (index == -1)
       return;
     this.pendingDialogStack.splice(index, 1);
@@ -298,7 +342,7 @@ var dialogPolyfill = (function() {
     this.updateStacking();
   };
 
-  addEventListenerFn(document, 'keydown', dialogPolyfill.dm.cancelDialog.bind(dialogPolyfill.dm));
+  addEventListenerFn(document, 'keydown', function(ev) { dialogPolyfill.dm.cancelDialog.call(dialogPolyfill.dm, ev) });
 
   return dialogPolyfill;
 })();
