@@ -43,7 +43,8 @@ With the polyfill, you do it like:
 
 ### Known limitations
 
-- Modality isn't bulletproof. For example, you can tab to inert elements.
+- Modailty isn't bulletproof. For example, `accessKey` can be used to focus inert elements.
+  - While focus is inside a `<dialog>`, the browser's chrome cannot be tabbed to.
 - The polyfill `<dialog>` should always be a child of `<body>`.
 - Polyfill top layer stacking can be ruined by playing with z-index.
 - The polyfill `<dialog>` does not retain dynamically set CSS top/bottom values
