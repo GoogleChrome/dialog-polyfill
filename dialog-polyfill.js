@@ -214,6 +214,9 @@ var dialogPolyfill = (function() {
       this.overlay.style.filter = 'alpha(opacity=0)';
     }
 
+    this.focusPageLast = this.createFocusable();
+    this.overlay.appendChild(this.focusPageLast);
+
     addEventListenerFn(this.overlay, 'click', function(e) {
       var redirectedEvent = document.createEvent('MouseEvents');
       redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
@@ -250,8 +253,6 @@ var dialogPolyfill = (function() {
     })
   };
 
-  dialogPolyfill.dm = new dialogPolyfill.DialogManager();
-
   dialogPolyfill.DialogManager.prototype.createFocusable = function(tabIndex) {
     var span = document.createElement('span');
     span.tabIndex = '' + (+tabIndex || 0);
@@ -261,12 +262,29 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.DialogManager.prototype.blockDocument = function() {
-    if (!document.body.contains(this.overlay))
+    if (!document.body.contains(this.overlay)) {
       document.body.appendChild(this.overlay);
+
+      // On Safari/Mac (and possibly other browsers), the documentElement is
+      // not focusable. This is required for modal dialogs as it is the first
+      // element to be hit by a tab event, and further tabs are redirected to
+      // the most visible dialog.
+      var de = document.documentElement;
+      if (this.needsDocumentElementFocus === undefined) {
+        de.focus();
+        this.needsDocumentElementFocus = (document.activeElement != de);
+      }
+      if (this.needsDocumentElementFocus) {
+        de.tabIndex = '1';
+      }
+    }
   };
 
   dialogPolyfill.DialogManager.prototype.unblockDocument = function() {
     document.body.removeChild(this.overlay);
+    if (this.needsDocumentElementFocus) {
+      document.documentElement.tabIndex = '';
+    }
   };
 
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
@@ -308,6 +326,11 @@ var dialogPolyfill = (function() {
       } else {  // backward
         if (active == pfi.focusFirst) {
           // TODO: Instead of wrapping to focusLast, escape to browser chrome.
+          pfi.focusLast.focus();
+        } else if (active == this.focusPageLast) {
+          // The focus element is at the end of the page (e.g., shift-tab from
+          // the window chrome): move current focus to the last element in the
+          // dialog instead.
           pfi.focusLast.focus();
         }
       }
@@ -380,11 +403,13 @@ var dialogPolyfill = (function() {
     dialog.dialogPolyfillInfo.backdrop = null;
     this.updateStacking();
 
-    dialog.removeChild(dialogPolyfillInfo.focusFirst);
-    dialog.removeChild(dialogPolyfillInfo.focusLast);
-    dialogPolyfillInfo.focusFirst = null;
-    dialogPolyfillInfo.focusLast = null;
+    dialog.removeChild(this.dialogPolyfillInfo.focusFirst);
+    dialog.removeChild(this.dialogPolyfillInfo.focusLast);
+    this.dialogPolyfillInfo.focusFirst = null;
+    this.dialogPolyfillInfo.focusLast = null;
   };
+
+  dialogPolyfill.dm = new dialogPolyfill.DialogManager();
 
   addEventListenerFn(document, 'keydown', function(ev) { dialogPolyfill.dm.handleKey.call(dialogPolyfill.dm, ev) });
 
