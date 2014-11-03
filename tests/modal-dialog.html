@@ -16,8 +16,10 @@ but can't click or tab to the "Can't click me!" button</p>
 <div id="console"></div>
 <dialog>
   <button id="dialog-button">Click me</button>
+  <input type="text" placeholder="Focus me" />
 </dialog>
 <button id="inert-button">Can't click me</button>
+<input type="text" placeholder="Can't focus me" />
 <script>
 function writeToConsole(s) {
   var console = document.getElementById('console');

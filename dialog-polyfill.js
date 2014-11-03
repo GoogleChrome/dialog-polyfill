@@ -252,6 +252,14 @@ var dialogPolyfill = (function() {
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
 
+  dialogPolyfill.DialogManager.prototype.createFocusable = function(tabIndex) {
+    var span = document.createElement('span');
+    span.tabIndex = '' + (+tabIndex || 0);
+    span.style.opacity = '0';
+    span.style.position = 'static';
+    return span;
+  };
+
   dialogPolyfill.DialogManager.prototype.blockDocument = function() {
     if (!document.body.contains(this.overlay))
       document.body.appendChild(this.overlay);
@@ -278,11 +286,36 @@ var dialogPolyfill = (function() {
     }
   };
 
-  dialogPolyfill.DialogManager.prototype.cancelDialog = function(event) {
-    if (event.keyCode === 27 && this.pendingDialogStack.length > 0) {
+  dialogPolyfill.DialogManager.prototype.handleKey = function(event) {
+    if (this.pendingDialogStack.length == 0) {
+      return;
+    }
+    var dialog = this.pendingDialogStack.slice(-1)[0];
+
+    if (event.keyCode == 9) {
+      var pfi = dialog.dialogPolyfillInfo;
+      var active = document.activeElement;
+      var forward = !event.shiftKey;
+      if (forward) {
+        if (active == document.documentElement ||
+            active == document.body ||
+            active == pfi.backdrop) {
+          pfi.focusFirst.focus();
+        } else if (active == pfi.focusLast) {
+          // TODO: Instead of wrapping to focusFirst, escape to browser chrome.
+          pfi.focusFirst.focus();
+        }
+      } else {  // backward
+        if (active == pfi.focusFirst) {
+          // TODO: Instead of wrapping to focusLast, escape to browser chrome.
+          pfi.focusLast.focus();
+        }
+      }
+    }
+
+    if (event.keyCode === 27) {
       event.preventDefault();
       event.stopPropagation();
-      var dialog = this.pendingDialogStack.slice(-1)[0];
       var cancelEvent;
       if (dialog) {
         if (CustomEvent) {
@@ -318,6 +351,12 @@ var dialogPolyfill = (function() {
     dialog.dialogPolyfillInfo.backdrop = backdrop;
     this.pendingDialogStack.push(dialog);
     this.updateStacking();
+
+    dialog.dialogPolyfillInfo.focusFirst = this.createFocusable();
+    dialog.dialogPolyfillInfo.focusLast = this.createFocusable();
+    dialog.appendChild(dialog.dialogPolyfillInfo.focusLast);
+    dialog.insertBefore(
+        dialog.dialogPolyfillInfo.focusFirst, dialog.firstChild);
   };
 
   dialogPolyfill.DialogManager.prototype.removeDialog = function(dialog) {
@@ -340,9 +379,14 @@ var dialogPolyfill = (function() {
     backdrop.parentNode.removeChild(backdrop);
     dialog.dialogPolyfillInfo.backdrop = null;
     this.updateStacking();
+
+    dialog.removeChild(dialogPolyfillInfo.focusFirst);
+    dialog.removeChild(dialogPolyfillInfo.focusLast);
+    dialogPolyfillInfo.focusFirst = null;
+    dialogPolyfillInfo.focusLast = null;
   };
 
-  addEventListenerFn(document, 'keydown', function(ev) { dialogPolyfill.dm.cancelDialog.call(dialogPolyfill.dm, ev) });
+  addEventListenerFn(document, 'keydown', function(ev) { dialogPolyfill.dm.handleKey.call(dialogPolyfill.dm, ev) });
 
   return dialogPolyfill;
 })();
