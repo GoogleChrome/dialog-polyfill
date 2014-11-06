@@ -255,8 +255,8 @@ var dialogPolyfill = (function() {
 
   dialogPolyfill.DialogManager.prototype.createFocusable = function(tabIndex) {
     var span = document.createElement('span');
-    span.tabIndex = '' + (+tabIndex || 0);
-    span.style.opacity = '0';
+    span.tabIndex = tabIndex || 0;
+    span.style.opacity = 0;
     span.style.position = 'static';
     return span;
   };
@@ -269,13 +269,13 @@ var dialogPolyfill = (function() {
       // not focusable. This is required for modal dialogs as it is the first
       // element to be hit by a tab event, and further tabs are redirected to
       // the most visible dialog.
-      var de = document.documentElement;
       if (this.needsDocumentElementFocus === undefined) {
         de.focus();
-        this.needsDocumentElementFocus = (document.activeElement != de);
+        this.needsDocumentElementFocus =
+            (document.activeElement != document.documentElement);
       }
       if (this.needsDocumentElementFocus) {
-        de.tabIndex = '1';
+        document.documentElement.tabIndex = '1';
       }
     }
   };
@@ -283,6 +283,7 @@ var dialogPolyfill = (function() {
   dialogPolyfill.DialogManager.prototype.unblockDocument = function() {
     document.body.removeChild(this.overlay);
     if (this.needsDocumentElementFocus) {
+      // TODO: Restore the previous tabIndex, rather than clearing it.
       document.documentElement.tabIndex = '';
     }
   };
@@ -310,33 +311,32 @@ var dialogPolyfill = (function() {
     }
     var dialog = this.pendingDialogStack.slice(-1)[0];
 
-    if (event.keyCode == 9) {
-      var pfi = dialog.dialogPolyfillInfo;
-      var active = document.activeElement;
+    if (event.keyCode == 9 /* tab */) {
+      var activeElement = document.activeElement;
       var forward = !event.shiftKey;
       if (forward) {
-        if (active == document.documentElement ||
-            active == document.body ||
-            active == pfi.backdrop) {
-          pfi.focusFirst.focus();
-        } else if (active == pfi.focusLast) {
+        if (activeElement == document.documentElement ||
+            activeElement == document.body ||
+            activeElement == dialog.dialogPolyfillInfo.backdrop) {
+          dialog.dialogPolyfillInfo.focusFirst.focus();
+        } else if (activeElement == pfi.focusLast) {
           // TODO: Instead of wrapping to focusFirst, escape to browser chrome.
-          pfi.focusFirst.focus();
+          dialog.dialogPolyfillInfo.focusFirst.focus();
         }
       } else {  // backward
-        if (active == pfi.focusFirst) {
+        if (activeElement == pfi.focusFirst) {
           // TODO: Instead of wrapping to focusLast, escape to browser chrome.
-          pfi.focusLast.focus();
-        } else if (active == this.focusPageLast) {
+          dialog.dialogPolyfillInfo.focusLast.focus();
+        } else if (activeElement == this.focusPageLast) {
           // The focus element is at the end of the page (e.g., shift-tab from
           // the window chrome): move current focus to the last element in the
           // dialog instead.
-          pfi.focusLast.focus();
+          dialog.dialogPolyfillInfo.focusLast.focus();
         }
       }
     }
 
-    if (event.keyCode === 27) {
+    if (event.keyCode === 27 /* esc */) {
       event.preventDefault();
       event.stopPropagation();
       var cancelEvent;
