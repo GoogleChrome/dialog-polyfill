@@ -270,7 +270,7 @@ var dialogPolyfill = (function() {
       // element to be hit by a tab event, and further tabs are redirected to
       // the most visible dialog.
       if (this.needsDocumentElementFocus === undefined) {
-        de.focus();
+        document.documentElement.focus();
         this.needsDocumentElementFocus =
             (document.activeElement != document.documentElement);
       }
@@ -319,7 +319,7 @@ var dialogPolyfill = (function() {
             activeElement == document.body ||
             activeElement == dialog.dialogPolyfillInfo.backdrop) {
           dialog.dialogPolyfillInfo.focusFirst.focus();
-        } else if (activeElement == pfi.focusLast) {
+        } else if (activeElement == dialog.dialogPolyfillInfo.focusLast) {
           // TODO: Instead of wrapping to focusFirst, escape to browser chrome.
           dialog.dialogPolyfillInfo.focusFirst.focus();
         }
