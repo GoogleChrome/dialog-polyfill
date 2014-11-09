@@ -214,6 +214,9 @@ var dialogPolyfill = (function() {
       this.overlay.style.filter = 'alpha(opacity=0)';
     }
 
+    this.focusPageLast = this.createFocusable();
+    this.overlay.appendChild(this.focusPageLast);
+
     addEventListenerFn(this.overlay, 'click', function(e) {
       var redirectedEvent = document.createEvent('MouseEvents');
       redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
@@ -250,15 +253,39 @@ var dialogPolyfill = (function() {
     })
   };
 
-  dialogPolyfill.dm = new dialogPolyfill.DialogManager();
+  dialogPolyfill.DialogManager.prototype.createFocusable = function(tabIndex) {
+    var span = document.createElement('span');
+    span.tabIndex = tabIndex || 0;
+    span.style.opacity = 0;
+    span.style.position = 'static';
+    return span;
+  };
 
   dialogPolyfill.DialogManager.prototype.blockDocument = function() {
-    if (!document.body.contains(this.overlay))
+    if (!document.body.contains(this.overlay)) {
       document.body.appendChild(this.overlay);
+
+      // On Safari/Mac (and possibly other browsers), the documentElement is
+      // not focusable. This is required for modal dialogs as it is the first
+      // element to be hit by a tab event, and further tabs are redirected to
+      // the most visible dialog.
+      if (this.needsDocumentElementFocus === undefined) {
+        document.documentElement.focus();
+        this.needsDocumentElementFocus =
+            (document.activeElement != document.documentElement);
+      }
+      if (this.needsDocumentElementFocus) {
+        document.documentElement.tabIndex = 1;
+      }
+    }
   };
 
   dialogPolyfill.DialogManager.prototype.unblockDocument = function() {
     document.body.removeChild(this.overlay);
+    if (this.needsDocumentElementFocus) {
+      // TODO: Restore the previous tabIndex, rather than clearing it.
+      document.documentElement.tabIndex = '';
+    }
   };
 
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
@@ -278,11 +305,40 @@ var dialogPolyfill = (function() {
     }
   };
 
-  dialogPolyfill.DialogManager.prototype.cancelDialog = function(event) {
-    if (event.keyCode === 27 && this.pendingDialogStack.length > 0) {
+  dialogPolyfill.DialogManager.prototype.handleKey = function(event) {
+    if (this.pendingDialogStack.length == 0) {
+      return;
+    }
+    var dialog = this.pendingDialogStack.slice(-1)[0];
+
+    if (event.keyCode == 9 /* tab */) {
+      var activeElement = document.activeElement;
+      var forward = !event.shiftKey;
+      if (forward) {
+        if (activeElement == document.documentElement ||
+            activeElement == document.body ||
+            activeElement == dialog.dialogPolyfillInfo.backdrop) {
+          dialog.dialogPolyfillInfo.focusFirst.focus();
+        } else if (activeElement == dialog.dialogPolyfillInfo.focusLast) {
+          // TODO: Instead of wrapping to focusFirst, escape to browser chrome.
+          dialog.dialogPolyfillInfo.focusFirst.focus();
+        }
+      } else {  // backward
+        if (activeElement == pfi.focusFirst) {
+          // TODO: Instead of wrapping to focusLast, escape to browser chrome.
+          dialog.dialogPolyfillInfo.focusLast.focus();
+        } else if (activeElement == this.focusPageLast) {
+          // The focus element is at the end of the page (e.g., shift-tab from
+          // the window chrome): move current focus to the last element in the
+          // dialog instead.
+          dialog.dialogPolyfillInfo.focusLast.focus();
+        }
+      }
+    }
+
+    if (event.keyCode === 27 /* esc */) {
       event.preventDefault();
       event.stopPropagation();
-      var dialog = this.pendingDialogStack.slice(-1)[0];
       var cancelEvent;
       if (dialog) {
         if (CustomEvent) {
@@ -318,6 +374,12 @@ var dialogPolyfill = (function() {
     dialog.dialogPolyfillInfo.backdrop = backdrop;
     this.pendingDialogStack.push(dialog);
     this.updateStacking();
+
+    dialog.dialogPolyfillInfo.focusFirst = this.createFocusable();
+    dialog.dialogPolyfillInfo.focusLast = this.createFocusable();
+    dialog.appendChild(dialog.dialogPolyfillInfo.focusLast);
+    dialog.insertBefore(
+        dialog.dialogPolyfillInfo.focusFirst, dialog.firstChild);
   };
 
   dialogPolyfill.DialogManager.prototype.removeDialog = function(dialog) {
@@ -340,9 +402,16 @@ var dialogPolyfill = (function() {
     backdrop.parentNode.removeChild(backdrop);
     dialog.dialogPolyfillInfo.backdrop = null;
     this.updateStacking();
+
+    dialog.removeChild(this.dialogPolyfillInfo.focusFirst);
+    dialog.removeChild(this.dialogPolyfillInfo.focusLast);
+    this.dialogPolyfillInfo.focusFirst = null;
+    this.dialogPolyfillInfo.focusLast = null;
   };
 
-  addEventListenerFn(document, 'keydown', function(ev) { dialogPolyfill.dm.cancelDialog.call(dialogPolyfill.dm, ev) });
+  dialogPolyfill.dm = new dialogPolyfill.DialogManager();
+
+  addEventListenerFn(document, 'keydown', function(ev) { dialogPolyfill.dm.handleKey.call(dialogPolyfill.dm, ev) });
 
   return dialogPolyfill;
 })();
