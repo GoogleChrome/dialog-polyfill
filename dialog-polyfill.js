@@ -275,7 +275,7 @@ var dialogPolyfill = (function() {
             (document.activeElement != document.documentElement);
       }
       if (this.needsDocumentElementFocus) {
-        document.documentElement.tabIndex = '1';
+        document.documentElement.tabIndex = 1;
       }
     }
   };
