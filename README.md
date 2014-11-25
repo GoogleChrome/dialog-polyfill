@@ -1,5 +1,3 @@
-Fork of https://github.com/GoogleChrome/dialog-polyfill to fix any problems I encounter.
-
 dialog-polyfill.js is a polyfill for `<dialog>`.
 
 `<dialog>` is an element for a popup box in a web page. See
