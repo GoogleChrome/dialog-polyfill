@@ -403,10 +403,10 @@ var dialogPolyfill = (function() {
     dialog.dialogPolyfillInfo.backdrop = null;
     this.updateStacking();
 
-    dialog.removeChild(this.dialogPolyfillInfo.focusFirst);
-    dialog.removeChild(this.dialogPolyfillInfo.focusLast);
-    this.dialogPolyfillInfo.focusFirst = null;
-    this.dialogPolyfillInfo.focusLast = null;
+    dialog.removeChild(dialog.dialogPolyfillInfo.focusFirst);
+    dialog.removeChild(dialog.dialogPolyfillInfo.focusLast);
+    dialog.dialogPolyfillInfo.focusFirst = null;
+    dialog.dialogPolyfillInfo.focusLast = null;
   };
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
