@@ -196,8 +196,8 @@ var dialogPolyfill = (function() {
   // dialogs on the pending dialog stack are positioned below it. In the actual
   // implementation, the modal dialog stacking is controlled by the top layer,
   // where z-index has no effect.
-  TOP_LAYER_ZINDEX = 100000;
-  MAX_PENDING_DIALOGS = 100000;
+  var TOP_LAYER_ZINDEX = 100000;
+  var MAX_PENDING_DIALOGS = 100000;
 
   dialogPolyfill.DialogManager = function() {
     this.pendingDialogStack = [];
