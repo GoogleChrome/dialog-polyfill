@@ -91,6 +91,9 @@ var dialogPolyfill = (function() {
       var first_form_ctrl = null;
       var autofocus = null;
       var findElementToFocus = function(root) {
+        if (!root.children) {
+          return;
+        }
         for (var i = 0; i < root.children.length; i++) {
           var elem = root.children[i];
           if (first_form_ctrl === null && !elem.disabled && (
