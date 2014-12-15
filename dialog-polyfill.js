@@ -233,7 +233,7 @@ var dialogPolyfill = (function() {
             addEventListenerFn(form, 'click', function(e) {
               if (e.target.type == 'submit') {
                 var event;
-                if (CustomEvent) {
+                if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
                   event = new CustomEvent('dialog_submit', {
                     bubbles:  true,
                     detail:   { target: e.target }
@@ -341,7 +341,7 @@ var dialogPolyfill = (function() {
       event.stopPropagation();
       var cancelEvent;
       if (dialog) {
-        if (CustomEvent) {
+        if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
           cancelEvent = new CustomEvent('cancel', {
             bubbles: false,
             cancelable: true
