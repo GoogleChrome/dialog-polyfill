@@ -367,15 +367,17 @@ var dialogPolyfill = (function() {
 
     var backdrop = document.createElement('div');
     backdrop.className = 'backdrop';
-    addEventListenerFn(backdrop, 'click', function(e) {
+    var clickEventListener = function(e) {
       var redirectedEvent = document.createEvent('MouseEvents');
       redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
           e.detail, e.screenX, e.screenY, e.clientX, e.clientY, e.ctrlKey,
           e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
       dialog.dispatchEvent(redirectedEvent);
-    });
+    };
+    addEventListenerFn(backdrop, 'click', clickEventListener);
     dialog.parentNode.insertBefore(backdrop, dialog.nextSibling);
     dialog.dialogPolyfillInfo.backdrop = backdrop;
+    dialog.dialogPolyfillInfo.clickEventListener = clickEventListener;
     this.pendingDialogStack.push(dialog);
     this.updateStacking();
 
@@ -403,8 +405,11 @@ var dialogPolyfill = (function() {
       return;
     this.pendingDialogStack.splice(index, 1);
     var backdrop = dialog.dialogPolyfillInfo.backdrop;
+    var clickEventListener = dialog.dialogPolyfillInfo.clickEventListener;
+    removeEventListenerFn(backdrop, 'click', clickEventListener);
     backdrop.parentNode.removeChild(backdrop);
     dialog.dialogPolyfillInfo.backdrop = null;
+    dialog.dialogPolyfillInfo.clickEventListener = null;
     this.updateStacking();
 
     dialog.removeChild(dialog.dialogPolyfillInfo.focusFirst);
