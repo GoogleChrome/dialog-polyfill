@@ -142,8 +142,10 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.close = function(retval) {
-    if (!this.open)
+    if (!this.open && !window.HTMLDialogElement) {
+      // Native implementations will set .open to false, so ignore this error.
       throw 'InvalidStateError: close called on closed dialog';
+    }
     this.open = false;
     this.removeAttribute('open');
 
