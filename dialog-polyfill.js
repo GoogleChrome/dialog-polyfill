@@ -309,54 +309,60 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.DialogManager.prototype.handleKey = function(event) {
-    if (this.pendingDialogStack.length == 0) {
+    var dialogCount = this.pendingDialogStack.length;
+    if (dialogCount == 0) {
       return;
     }
-    var dialog = this.pendingDialogStack.slice(-1)[0];
+    var dialog = this.pendingDialogStack[dialogCount - 1];
+    var pfi = dialog.dialogPolyfillInfo;
 
-    if (event.keyCode == 9 /* tab */) {
+    switch (event.keyCode) {
+    case 9: /* tab */
       var activeElement = document.activeElement;
       var forward = !event.shiftKey;
       if (forward) {
+        // Tab forward, so look for document or fake last focus element.
         if (activeElement == document.documentElement ||
             activeElement == document.body ||
-            activeElement == dialog.dialogPolyfillInfo.backdrop) {
-          dialog.dialogPolyfillInfo.focusFirst.focus();
-        } else if (activeElement == dialog.dialogPolyfillInfo.focusLast) {
+            activeElement == pfi.backdrop) {
+          pfi.focusFirst.focus();
+        } else if (activeElement == pfi.focusLast) {
           // TODO: Instead of wrapping to focusFirst, escape to browser chrome.
-          dialog.dialogPolyfillInfo.focusFirst.focus();
+          pfi.focusFirst.focus();
         }
-      } else {  // backward
+      } else {
+        // Tab backwards, so look for fake first focus element.
         if (activeElement == pfi.focusFirst) {
           // TODO: Instead of wrapping to focusLast, escape to browser chrome.
-          dialog.dialogPolyfillInfo.focusLast.focus();
+          pfi.focusLast.focus();
         } else if (activeElement == this.focusPageLast) {
           // The focus element is at the end of the page (e.g., shift-tab from
           // the window chrome): move current focus to the last element in the
           // dialog instead.
-          dialog.dialogPolyfillInfo.focusLast.focus();
+          pfi.focusLast.focus();
         }
       }
-    }
+      break;
 
-    if (event.keyCode === 27 /* esc */) {
+    case 27: /* esc */
       event.preventDefault();
       event.stopPropagation();
       var cancelEvent;
-      if (dialog) {
-        if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
-          cancelEvent = new CustomEvent('cancel', {
-            bubbles: false,
-            cancelable: true
-          });
-        } else {
-          cancelEvent = document.createEvent('HTMLEvents');
-          cancelEvent.initEvent('cancel', false, true);
-        }
-        if (dialog.dispatchEvent(cancelEvent)) {
-          dialog.close();
-        }
+
+      if (typeof CustomEvent === 'function') { // IE 11 reports a `CustomEvent` object
+        cancelEvent = new CustomEvent('cancel', {
+          bubbles: false,
+          cancelable: true
+        });
+      } else {
+        cancelEvent = document.createEvent('HTMLEvents');
+        cancelEvent.initEvent('cancel', false, true);
       }
+      if (dialog.dispatchEvent(cancelEvent)) {
+        dialog.close();
+      }
+      break;
+
     }
   };
 
@@ -420,7 +426,9 @@ var dialogPolyfill = (function() {
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
 
-  addEventListenerFn(document, 'keydown', function(ev) { dialogPolyfill.dm.handleKey.call(dialogPolyfill.dm, ev) });
+  addEventListenerFn(document, 'keydown', function(event) {
+    dialogPolyfill.dm.handleKey.call(dialogPolyfill.dm, event);
+  });
 
   return dialogPolyfill;
 })();
