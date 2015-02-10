@@ -20,8 +20,7 @@
 
 dialog {
     width: 50%;
-    -webkit-border-radius: 3px;
-    -webkit-box-orient: vertical;
+    border-radius: 3px;
     opacity: 0;
     background: white;
     box-shadow: 0 4px 23px 5px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0,0,0,0.15);
@@ -192,7 +191,7 @@ function closeDialog() {
 
 function computeCenteredTop(dialog) {
     dialog.style.top = 'auto';
-    dialog.style.webkitTransition = '';
+    dialog.style.transition = '';
     dialog.showModal();
     var computedTopPx = window.getComputedStyle(dialog).top;
     var computedTop = parseInt(computedTopPx.substring(0, computedTopPx.length - 2), 10);
@@ -204,7 +203,7 @@ function openDialog() {
     centerTop = computeCenteredTop(dialog);
     dialog.style.top = window.scrollY + 'px';
     dialog.style.opacity = 0;
-    dialog.style.webkitTransition = 'all 250ms ease';
+    dialog.style.transition = 'all 250ms ease';
 
     dialog.showModal();
 
@@ -213,10 +212,15 @@ function openDialog() {
 }
 
 function pulseDialog() {
-    dialog.classList.add('pulse');
-    dialog.addEventListener('webkitAnimationEnd', function(e) {
-      dialog.classList.remove('pulse');
-    });
+  if (!dialog.style.webkitAnimation) {
+    return;
+  }
+  // classList isn't supported in IE8, but it's safe to use here as this only
+  // runs inside WebKit/Chrome anyway.
+  dialog.classList.add('pulse');
+  dialog.addEventListener('webkitAnimationEnd', function(e) {
+    dialog.classList.remove('pulse');
+  });
 }
 
 function clickedInDialog(mouseEvent) {
@@ -240,14 +244,11 @@ document.body.addEventListener('keydown', function(e) {
 
 var enableBackdrop = document.getElementById('enable-backdrop');
 enableBackdrop.addEventListener('change', function(e) {
-    if (document.getElementById('enable-backdrop').checked)
-        dialog.classList.remove('no-backdrop');
-    else
-        dialog.classList.add('no-backdrop');
-
-    // FIXME: Without this ::backdrop is not redrawn. crbug.com/258759
-    dialog.close();
-    dialog.showModal();
+  if (this.checked) {
+    dialog.className = '';
+  } else {
+    dialog.className = 'no-backdrop';
+  }
 });
 
 var closeButton = document.getElementById('close-button');
