@@ -1,11 +1,37 @@
 var dialogPolyfill = (function() {
 
-  var addEventListenerFn = (window.document.addEventListener
+  // Support utils for IE8.
+  var support = {};
+  support.indexOf = ('function' == typeof Array.prototype.indexOf)
+      ? function(array, elem) { return array.indexOf(elem); }
+      : function(array, elem) {
+        for (var i = 0; i < array.length; ++i) {
+          if (array[i] == elem) {
+            return i;
+          }
+        }
+        return -1;
+      };
+  support.addEventListener = window.document.addEventListener
       ? function(element, type, fn) { element.addEventListener(type, fn); }
-      : function(element, type, fn) { element.attachEvent('on' + type, fn); });
-  var removeEventListenerFn = (window.document.removeEventListener
+      : function(element, type, fn) { element.attachEvent('on' + type, fn); };
+  support.removeEventListener = window.document.removeEventListener
       ? function(element, type, fn) { element.removeEventListener(type, fn); }
-      : function(element, type, fn) { element.detachEvent('on' + type, fn); });
+      : function(element, type, fn) { element.detachEvent('on' + type, fn); };
+  support.createCustomEvent = function(type, bubbles, cancelable, opt_detail) {
+    if (typeof CustomEvent === "function") {
+      // IE 11 reports a `CustomEvent` object.
+      return new CustomEvent(type, {
+        bubbles:    bubbles,
+        cancelable: cancelable,
+        detail:     opt_detail || null
+      });
+    }
+    var event = document.createEvent('HTMLEvents');
+    event.initEvent(type, bubbles, cancelable);
+    event.detail = opt_detail || null;
+    return event;
+  };
 
   var dialogPolyfill = {};
 
@@ -15,10 +41,7 @@ var dialogPolyfill = (function() {
       document.body.clientHeight :
       window.innerHeight,
     topValue = scrollTop + (windowHeight - element.offsetHeight) / 2;
-    if (0 > topValue) {
-      topValue = 0;
-    }
-    element.style.top = topValue + 'px';
+    element.style.top = Math.max(0, topValue) + 'px';
     element.dialogPolyfillInfo.isTopOverridden = true;
   };
 
@@ -185,7 +208,7 @@ var dialogPolyfill = (function() {
       console.warn("This browser already supports <dialog>, the polyfill " +
           "may not work correctly.");
     }
-    addEventListenerFn(element, 'dialog_submit', function(e) {
+    support.addEventListener(element, 'dialog_submit', function(e) {
       element.close(e.detail.target.value);
       e.preventDefault();
       e.stopPropagation();
@@ -222,32 +245,24 @@ var dialogPolyfill = (function() {
     this.focusPageLast = this.createFocusable();
     this.overlay.appendChild(this.focusPageLast);
 
-    addEventListenerFn(this.overlay, 'click', function(e) {
+    support.addEventListener(this.overlay, 'click', function(e) {
       var redirectedEvent = document.createEvent('MouseEvents');
       redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
           e.detail, e.screenX, e.screenY, e.clientX, e.clientY, e.ctrlKey,
           e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
       document.body.dispatchEvent(redirectedEvent);
     });
-    addEventListenerFn(window, 'load', function() {
+    support.addEventListener(window, 'load', function() {
       var forms = document.getElementsByTagName('form'),
       i = forms.length;
       while(i--) {
         (function(form) {
           if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
-            addEventListenerFn(form, 'click', function(e) {
+            support.addEventListener(form, 'click', function(e) {
               if (e.target.type == 'submit') {
-                var event;
-                if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
-                  event = new CustomEvent('dialog_submit', {
-                    bubbles:  true,
-                    detail:   { target: e.target }
-                  });
-                } else {
-                  event = document.createEvent('HTMLEvents');
-                  event.initEvent('dialog_submit', true, true);
-                  event.detail = {target: e.target};
-                }
+                var detail = {target: e.target};
+                var event = support.createCustomEvent(
+                    'dialog_submit', true, true, detail);
                 this.dispatchEvent(event);
                 e.preventDefault();
               }
@@ -261,7 +276,9 @@ var dialogPolyfill = (function() {
   dialogPolyfill.DialogManager.prototype.createFocusable = function(tabIndex) {
     var span = document.createElement('span');
     span.tabIndex = tabIndex || 0;
-    span.style.opacity = 0;
+    try {
+      span.style.opacity = 0;
+    } catch(e) {}
     span.style.position = 'static';
     return span;
   };
@@ -349,17 +366,8 @@ var dialogPolyfill = (function() {
     case 27: /* esc */
       event.preventDefault();
       event.stopPropagation();
-      var cancelEvent;
 
-      if (typeof CustomEvent === 'function') { // IE 11 reports a `CustomEvent` object
-        cancelEvent = new CustomEvent('cancel', {
-          bubbles: false,
-          cancelable: true
-        });
-      } else {
-        cancelEvent = document.createEvent('HTMLEvents');
-        cancelEvent.initEvent('cancel', false, true);
-      }
+      var cancelEvent = support.createCustomEvent('cancel', false, true, null);
       if (dialog.dispatchEvent(cancelEvent)) {
         dialog.close();
       }
@@ -382,7 +390,7 @@ var dialogPolyfill = (function() {
           e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
       dialog.dispatchEvent(redirectedEvent);
     };
-    addEventListenerFn(backdrop, 'click', clickEventListener);
+    support.addEventListener(backdrop, 'click', clickEventListener);
     dialog.parentNode.insertBefore(backdrop, dialog.nextSibling);
     dialog.dialogPolyfillInfo.backdrop = backdrop;
     dialog.dialogPolyfillInfo.clickEventListener = clickEventListener;
@@ -397,24 +405,14 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.DialogManager.prototype.removeDialog = function(dialog) {
-    if ('undefined' == typeof Array.prototype.indexOf) {
-      var index = (function(stack, dialog) {
-        for(var i = 0; i < stack.length; i++) {
-          if (stack[i] === dialog) {
-            return i;
-          }
-        }
-        return -1;
-      })(this.pendingDialogStack, dialog);
-    } else {
-      var index = this.pendingDialogStack.indexOf(dialog);
-    }
-    if (index == -1)
+    var index = support.indexOf(this.pendingDialogStack, dialog);
+    if (index == -1) {
       return;
+    }
     this.pendingDialogStack.splice(index, 1);
     var backdrop = dialog.dialogPolyfillInfo.backdrop;
     var clickEventListener = dialog.dialogPolyfillInfo.clickEventListener;
-    removeEventListenerFn(backdrop, 'click', clickEventListener);
+    support.removeEventListener(backdrop, 'click', clickEventListener);
     backdrop.parentNode.removeChild(backdrop);
     dialog.dialogPolyfillInfo.backdrop = null;
     dialog.dialogPolyfillInfo.clickEventListener = null;
@@ -428,9 +426,7 @@ var dialogPolyfill = (function() {
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
 
-  addEventListenerFn(document, 'keydown', function(event) {
-    dialogPolyfill.dm.handleKey.call(dialogPolyfill.dm, event);
-  });
+  support.addEventListener(document, 'keydown', function(ev) { dialogPolyfill.dm.handleKey.call(dialogPolyfill.dm, ev) });
 
   return dialogPolyfill;
 })();
