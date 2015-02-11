@@ -1,24 +1,22 @@
 var dialogPolyfill = (function() {
 
-  var addEventListenerFn = (window.document.addEventListener
-      ? function(element, type, fn) { element.addEventListener(type, fn); }
-      : function(element, type, fn) { element.attachEvent('on' + type, fn); });
-  var removeEventListenerFn = (window.document.removeEventListener
-      ? function(element, type, fn) { element.removeEventListener(type, fn); }
-      : function(element, type, fn) { element.detachEvent('on' + type, fn); });
+  var supportCustomEvent = window.CustomEvent;
+  if (!supportCustomEvent) {
+    supportCustomEvent = function CustomEvent(event, x) {
+      x = x || {};
+      var ev = document.createEvent('CustomEvent');
+      ev.initCustomEvent(event, !!x.bubbles, !!x.cancelable, x.detail || null);
+      return ev;
+    };
+    supportCustomEvent.prototype = window.Event.prototype;
+  }
 
   var dialogPolyfill = {};
 
   dialogPolyfill.reposition = function(element) {
-    var scrollTop = document.body.scrollTop || document.documentElement.scrollTop,
-    windowHeight = ('undefined' == typeof window.innerHeight) && document.body && document.body.clientHeight ? 
-      document.body.clientHeight :
-      window.innerHeight,
-    topValue = scrollTop + (windowHeight - element.offsetHeight) / 2;
-    if (0 > topValue) {
-      topValue = 0;
-    }
-    element.style.top = topValue + 'px';
+    var scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
+    var topValue = scrollTop + (window.innerHeight - element.offsetHeight) / 2;
+    element.style.top = Math.max(0, topValue) + 'px';
     element.dialogPolyfillInfo.isTopOverridden = true;
   };
 
@@ -59,14 +57,9 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.needsCentering = function(dialog) {
-    if ('undefined' == typeof getComputedStyle) {
-      if (dialog.currentStyle && 'absolute' != dialog.currentStyle['position']) {
-        return false;
-      }
-    } else {
-      var computedStyle = getComputedStyle(dialog);
-      if (computedStyle.position != 'absolute')
-        return false;
+    var computedStyle = window.getComputedStyle(dialog);
+    if (computedStyle.position != 'absolute') {
+      return false;
     }
 
     // We must determine whether the top/bottom specified value is non-auto.  In
@@ -167,15 +160,13 @@ var dialogPolyfill = (function() {
 
     // Triggering "close" event for any attached listeners on the <dialog>
     var event;
-    if (this.dispatchEvent) {
-      if (document.createEvent) {
-        event = document.createEvent('HTMLEvents');
-        event.initEvent('close', true, true);
-      } else {
-        event = new Event('close');
-      }
-      this.dispatchEvent(event);
+    if (document.createEvent) {
+      event = document.createEvent('HTMLEvents');
+      event.initEvent('close', true, true);
+    } else {
+      event = new Event('close');
     }
+    this.dispatchEvent(event);
 
     return this.returnValue;
   };
@@ -185,14 +176,15 @@ var dialogPolyfill = (function() {
       console.warn("This browser already supports <dialog>, the polyfill " +
           "may not work correctly.");
     }
-    addEventListenerFn(element, 'dialog_submit', function(e) {
+    element.addEventListener('dialog_submit', function(e) {
       element.close(e.detail.target.value);
       e.preventDefault();
       e.stopPropagation();
     });
-    element.show = function() { dialogPolyfill.showDialog.call(element, false); }
-    element.showModal = function() { dialogPolyfill.showDialog.call(element, true); }
-    element.close = function(retval) { dialogPolyfill.close.call(element, retval); }
+
+    element.show = dialogPolyfill.showDialog.bind(element, false);
+    element.showModal = dialogPolyfill.showDialog.bind(element, true);
+    element.close = dialogPolyfill.close.bind(element);
     element.dialogPolyfillInfo = {};
   };
 
@@ -212,42 +204,30 @@ var dialogPolyfill = (function() {
     this.overlay.style.position = 'fixed';
     this.overlay.style.left = '0px';
     this.overlay.style.top = '0px';
-    try {
-      this.overlay.style.backgroundColor = 'rgba(0,0,0,0.0)';
-    } catch(e) {
-      this.overlay.style.backgroundColor = '#000';
-      this.overlay.style.filter = 'alpha(opacity=0)';
-    }
+    this.overlay.style.backgroundColor = 'rgba(0,0,0,0.0)';
 
     this.focusPageLast = this.createFocusable();
     this.overlay.appendChild(this.focusPageLast);
 
-    addEventListenerFn(this.overlay, 'click', function(e) {
+    this.overlay.addEventListener('click', function(e) {
       var redirectedEvent = document.createEvent('MouseEvents');
       redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
           e.detail, e.screenX, e.screenY, e.clientX, e.clientY, e.ctrlKey,
           e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
       document.body.dispatchEvent(redirectedEvent);
     });
-    addEventListenerFn(window, 'load', function() {
+    window.addEventListener('load', function() {
       var forms = document.getElementsByTagName('form'),
       i = forms.length;
       while(i--) {
         (function(form) {
           if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
-            addEventListenerFn(form, 'click', function(e) {
+            form.addEventListener('click', function(e) {
               if (e.target.type == 'submit') {
-                var event;
-                if (typeof CustomEvent === "function") { //IE 11 reports a `CustomEvent` object
-                  event = new CustomEvent('dialog_submit', {
-                    bubbles:  true,
-                    detail:   { target: e.target }
-                  });
-                } else {
-                  event = document.createEvent('HTMLEvents');
-                  event.initEvent('dialog_submit', true, true);
-                  event.detail = {target: e.target};
-                }
+                var event = new supportCustomEvent('dialog_submit', {
+                  bubbles: true,
+                  detail: { target: e.target }
+                });
                 this.dispatchEvent(event);
                 e.preventDefault();
               }
@@ -349,17 +329,10 @@ var dialogPolyfill = (function() {
     case 27: /* esc */
       event.preventDefault();
       event.stopPropagation();
-      var cancelEvent;
-
-      if (typeof CustomEvent === 'function') { // IE 11 reports a `CustomEvent` object
-        cancelEvent = new CustomEvent('cancel', {
-          bubbles: false,
-          cancelable: true
-        });
-      } else {
-        cancelEvent = document.createEvent('HTMLEvents');
-        cancelEvent.initEvent('cancel', false, true);
-      }
+      var cancelEvent = new supportCustomEvent('cancel', {
+        bubbles: false,
+        cancelable: true
+      });
       if (dialog.dispatchEvent(cancelEvent)) {
         dialog.close();
       }
@@ -382,7 +355,7 @@ var dialogPolyfill = (function() {
           e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
       dialog.dispatchEvent(redirectedEvent);
     };
-    addEventListenerFn(backdrop, 'click', clickEventListener);
+    backdrop.addEventListener('click', clickEventListener);
     dialog.parentNode.insertBefore(backdrop, dialog.nextSibling);
     dialog.dialogPolyfillInfo.backdrop = backdrop;
     dialog.dialogPolyfillInfo.clickEventListener = clickEventListener;
@@ -397,24 +370,14 @@ var dialogPolyfill = (function() {
   };
 
   dialogPolyfill.DialogManager.prototype.removeDialog = function(dialog) {
-    if ('undefined' == typeof Array.prototype.indexOf) {
-      var index = (function(stack, dialog) {
-        for(var i = 0; i < stack.length; i++) {
-          if (stack[i] === dialog) {
-            return i;
-          }
-        }
-        return -1;
-      })(this.pendingDialogStack, dialog);
-    } else {
-      var index = this.pendingDialogStack.indexOf(dialog);
-    }
-    if (index == -1)
+    var index = this.pendingDialogStack.indexOf(dialog);
+    if (index == -1) {
       return;
+    }
     this.pendingDialogStack.splice(index, 1);
     var backdrop = dialog.dialogPolyfillInfo.backdrop;
     var clickEventListener = dialog.dialogPolyfillInfo.clickEventListener;
-    removeEventListenerFn(backdrop, 'click', clickEventListener);
+    backdrop.removeEventListener('click', clickEventListener);
     backdrop.parentNode.removeChild(backdrop);
     dialog.dialogPolyfillInfo.backdrop = null;
     dialog.dialogPolyfillInfo.clickEventListener = null;
@@ -428,9 +391,8 @@ var dialogPolyfill = (function() {
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
 
-  addEventListenerFn(document, 'keydown', function(event) {
-    dialogPolyfill.dm.handleKey.call(dialogPolyfill.dm, event);
-  });
+  document.addEventListener('keydown',
+      dialogPolyfill.dm.handleKey.bind(dialogPolyfill.dm));
 
   return dialogPolyfill;
 })();

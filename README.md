@@ -5,12 +5,24 @@ dialog-polyfill.js is a polyfill for `<dialog>`.
 and the
 [HTML spec](http://www.whatwg.org/specs/web-apps/current-work/multipage/commands.html#the-dialog-element).
 
-### Example
+## Usage
+
+### Installation
+
+You may optionally install via Bower-
+
+    $ bower install dialog-polyfill
+
+### Supports
+
+This polyfill works on modern versions of all major browsers. It also supports IE9 and above.
+
+## Example
 
 ```html
 <head>
   <script src="dialog-polyfill.js"></script>
-  <link rel="stylesheet" type="text/css" href="dialog-polyfill.css">
+  <link rel="stylesheet" type="text/css" href="dialog-polyfill.css" />
 </head>
 <body>
   <dialog>I'm a dialog!</dialog>
@@ -33,15 +45,16 @@ In native `<dialog>`, the backdrop is a pseudo-element:
 }
 ```
 
-With the polyfill, you do it like:
+When using the polyfill, the backdrop will be an adjacent element:
 
 ```css
-#mydialog + .backdrop {
+#mydialog + .backdrop,
+#mydialog::backdrop {
   background-color: green;
 }
 ```
 
-### Known limitations
+## Limitations
 
 - Modailty isn't bulletproof. For example, `accessKey` can be used to focus inert elements.
   - While focus is inside a `<dialog>`, the browser's chrome cannot be tabbed to.
