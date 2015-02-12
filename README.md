@@ -48,7 +48,10 @@ In native `<dialog>`, the backdrop is a pseudo-element:
 When using the polyfill, the backdrop will be an adjacent element:
 
 ```css
-#mydialog + .backdrop,
+#mydialog + .backdrop {
+  background-color: green;
+}
+
 #mydialog::backdrop {
   background-color: green;
 }
