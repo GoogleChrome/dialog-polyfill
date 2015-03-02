@@ -1,7 +1,7 @@
 var dialogPolyfill = (function() {
 
   var supportCustomEvent = window.CustomEvent;
-  if (!supportCustomEvent) {
+  if (!supportCustomEvent || typeof supportCustomEvent == "object") {
     supportCustomEvent = function CustomEvent(event, x) {
       x = x || {};
       var ev = document.createEvent('CustomEvent');
