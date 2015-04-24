@@ -282,8 +282,6 @@ var dialogPolyfill = (function() {
 
     var zIndex = TOP_LAYER_ZINDEX;
     for (var i = 0; i < this.pendingDialogStack.length; i++) {
-      if (i == this.pendingDialogStack.length - 1)
-        this.overlay.style.zIndex = zIndex++;
       var dialog = this.pendingDialogStack[i];
       dialog.dialogPolyfillInfo.backdrop.style.zIndex = zIndex++;
       dialog.style.zIndex = zIndex++;
