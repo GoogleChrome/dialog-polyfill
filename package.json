@@ -1,0 +1,13 @@
+{
+  "name": "dialog-polyfill",
+  "version": "0.3.0",
+  "description": "Polyfill for the <dialog> element",
+  "main": "dialog-polyfill.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GoogleChrome/dialog-polyfill.git"
+  },
+  "author": "The Chromium Authors",
+  "license": "BSD",
+  "homepage": "https://github.com/GoogleChrome/dialog-polyfill"
+}
