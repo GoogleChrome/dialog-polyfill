@@ -38,7 +38,7 @@ function dialogTest(name, fn) {
   });
 }
 
-dialogTest('open', function(dialog) {
+dialogTest('basic dialog operation', function(dialog) {
   assert(!dialog.hasAttribute('open'));
   dialog.show();
   assert(dialog.hasAttribute('open'));
