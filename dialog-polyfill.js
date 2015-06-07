@@ -210,22 +210,12 @@ var dialogPolyfill = (function() {
   dialogPolyfill.DialogManager = function() {
     this.pendingDialogStack = [];
     this.overlay = document.createElement('div');
-    this.overlay.style.width = '100%';
-    this.overlay.style.height = '100%';
-    this.overlay.style.position = 'fixed';
-    this.overlay.style.left = '0px';
-    this.overlay.style.top = '0px';
-    this.overlay.style.backgroundColor = 'rgba(0,0,0,0.0)';
+    this.overlay.className = '_dialog_overlay';
 
     this.focusPageLast = this.createFocusable();
     this.overlay.appendChild(this.focusPageLast);
-
     this.overlay.addEventListener('click', function(e) {
-      var redirectedEvent = document.createEvent('MouseEvents');
-      redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
-          e.detail, e.screenX, e.screenY, e.clientX, e.clientY, e.ctrlKey,
-          e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
-      document.body.dispatchEvent(redirectedEvent);
+      e.stopPropagation();
     });
 
     // TODO: Only install when any dialogs are open.
@@ -367,6 +357,7 @@ var dialogPolyfill = (function() {
           e.detail, e.screenX, e.screenY, e.clientX, e.clientY, e.ctrlKey,
           e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
       dialog.dispatchEvent(redirectedEvent);
+      e.stopPropagation();
     };
     backdrop.addEventListener('click', clickEventListener);
     dialog.parentNode.insertBefore(backdrop, dialog.nextSibling);

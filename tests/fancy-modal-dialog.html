@@ -255,6 +255,7 @@ var closeButton = document.getElementById('close-button');
 closeButton.addEventListener('click', function(e) { closeDialog(); });
 
 document.body.addEventListener('click', function(e) {
+  console.info('document body click', e.target);
     if (!dialog.open)
         return;
     if (e.target != document.body)

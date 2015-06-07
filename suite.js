@@ -143,6 +143,24 @@ void function() {
       assert.isNull(document.querySelector('.backdrop'));
       dialog.close();
     });
+    test('backdrop click appears as dialog', function() {
+      dialog.showModal();
+      var backdrop = dialog.nextElementSibling;
+
+      var clickFired = 0;
+      var helper = function(ev) {
+        assert.equal(ev.target, dialog);
+        ++clickFired;
+      };
+
+      try {
+        dialog.addEventListener('click', helper)
+        backdrop.click();
+        assert.equal(clickFired, 1);
+      } finally {
+        document.body.removeEventListener('click', helper);
+      }
+    });
   });
 
   suite('form focus', function() {
@@ -260,6 +278,22 @@ void function() {
       dialog.showModal();
       dialog.close();
       assert.equal(closeFired, 2);
+    });
+    test('overlay click is prevented', function() {
+      dialog.showModal();
+
+      var overlay = document.querySelector('._dialog_overlay');
+      assert.isNotNull(overlay);
+
+      var helper = function(ev) {
+        throw Error('body should not be clicked');
+      };
+      try {
+        document.body.addEventListener('click', helper);
+        overlay.click();
+      } finally {
+        document.body.removeEventListener('click', helper);
+      }
     });
   });
 
