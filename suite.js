@@ -77,10 +77,16 @@ void function() {
     assert.isFalse(dialog.hasAttribute('open'));
     dialog.show();
     assert.isTrue(dialog.hasAttribute('open'));
+    assert.isTrue(dialog.open);
 
     var returnValue = 1234;
     dialog.close(returnValue);
     assert.isFalse(dialog.hasAttribute('open'));
+    assert.equal(dialog.returnValue, returnValue);
+
+    dialog.show();
+    dialog.close();
+    assert.isFalse(dialog.open);
     assert.equal(dialog.returnValue, returnValue);
   });
 

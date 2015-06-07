@@ -76,7 +76,7 @@ var dialogPolyfill = (function() {
     if (this.open) {
       throw 'InvalidStateError: showDialog called on open dialog';
     }
-    this.open = true;
+    this.open = true;  // TODO: should be a getter mapped to attribute
     this.setAttribute('open', 'open');
 
     if (isModal) {
@@ -186,6 +186,7 @@ var dialogPolyfill = (function() {
     element.showModal = dialogPolyfill.showDialog.bind(element, true);
     element.close = dialogPolyfill.close.bind(element);
     element.dialogPolyfillInfo = {};
+    element.open = false;
   };
 
   // The overlay is used to simulate how a modal dialog blocks the document. The
