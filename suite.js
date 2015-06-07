@@ -131,6 +131,18 @@ void function() {
   });
 
   suite('order', function() {
+    test('non-modal unchanged', function() {
+      var one = createDialog();
+      var two = createDialog();
+
+      one.style.zIndex = 100;
+      two.style.zIndex = 200;
+      one.show();
+      two.show();
+
+      assert.equal(window.getComputedStyle(one).zIndex, 100);
+      assert.equal(window.getComputedStyle(two).zIndex, 200);
+    });
     test('modal stacking order', function() {
       dialog.showModal();
 
