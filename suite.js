@@ -117,16 +117,17 @@ void function() {
 
   suite('backdrop', function() {
     test('backdrop div on modal', function() {
-      dialog.show();
-      assert.isNull(document.querySelector('.backdrop'));
-      dialog.close();
-
       dialog.showModal();
       var foundBackdrop = document.querySelector('.backdrop');
       assert.isNotNull(foundBackdrop);
 
       var sibling = dialog.nextElementSibling;
       assert.strictEqual(foundBackdrop, sibling);
+    });
+    test('no backdrop on non-modal', function() {
+      dialog.show();
+      assert.isNull(document.querySelector('.backdrop'));
+      dialog.close();
     });
   });
 
