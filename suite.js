@@ -122,7 +122,11 @@ void function() {
       dialog.close();
 
       dialog.showModal();
-      assert.isNotNull(document.querySelector('.backdrop'));
+      var foundBackdrop = document.querySelector('.backdrop');
+      assert.isNotNull(foundBackdrop);
+
+      var sibling = dialog.nextElementSibling;
+      assert.strictEqual(foundBackdrop, sibling);
     });
   });
 
@@ -142,8 +146,20 @@ void function() {
       front.showModal();
 
       var zf = window.getComputedStyle(front).zIndex;
-      var bf = window.getComputedStyle(back).zIndex;
-      assert.isAbove(zf, bf, 'showModal order dictates z-index');
+      var zb = window.getComputedStyle(back).zIndex;
+      assert.isAbove(zf, zb, 'showModal order dictates z-index');
+
+      var backBackdrop = back.nextElementSibling;
+      var zbb = window.getComputedStyle(backBackdrop).zIndex;
+      assert.equal(backBackdrop.className, 'backdrop');
+      assert.isBelow(zbb, zb, 'backdrop below dialog');
+
+      var frontBackdrop = front.nextElementSibling;
+      var zfb = window.getComputedStyle(frontBackdrop).zIndex
+      assert.equal(frontBackdrop.className, 'backdrop');
+      assert.isBelow(zfb, zf,' backdrop below dialog');
+
+      assert.isAbove(zfb, zb, 'front backdrop is above back dialog');
     });
   });
 
