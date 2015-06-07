@@ -216,7 +216,7 @@ void function() {
       dialog.close();
       assert.equal(closeFired, 1);
 
-      dialog.show();
+      dialog.showModal();
       dialog.close();
       assert.equal(closeFired, 2);
     });
