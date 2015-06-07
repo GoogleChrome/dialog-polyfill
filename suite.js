@@ -16,7 +16,6 @@
 
 
 void function() {
-  var dialog;  // global dialog for all tests
 
   /**
    * Asserts that the displayed dialog is in the center of the screen.
@@ -32,20 +31,37 @@ void function() {
     assert.closeTo(rect.left, expectedLeft, 1);
   }
 
-  setup(function() {
-    dialog = document.createElement('dialog');
-    dialog.innerText = 'Hello';
-    document.body.appendChild(dialog);
-    dialogPolyfill.registerDialog(dialog);
-  });
+  /**
+   * Creates a dialog for testing that will be cleaned up later.
+   *
+   * @param {string?} opt_content to be used as innerHTML
+   */
+  var createDialog = (function() {
+    var cleanup = [];
+    teardown(function() {
+      cleanup.forEach(function(dialog) {
+        try {
+          dialog.close();
+        } catch (e) {}
+        if (dialog.parentElement) {
+          dialog.parentElement.removeChild(dialog);
+        }
+      });
+    });
 
-  teardown(function() {
-    try {
-      dialog.close();
-    } catch (e) {}
-    if (dialog && dialog.parentElement) {
-      dialog.parentElement.removeChild(dialog);
-    }
+    return function(opt_content) {
+      var dialog = document.createElement('dialog');
+      dialog.innerHTML = opt_content || 'Dialog #' + (cleanup.length);
+      document.body.appendChild(dialog);
+      dialogPolyfill.registerDialog(dialog);
+      cleanup.push(dialog);
+      return dialog;
+    };
+  })();
+
+  var dialog;  // global dialog for all tests
+  setup(function() {
+    dialog = createDialog('Default Dialog');
   });
 
   test('basic', function() {
@@ -107,6 +123,27 @@ void function() {
 
       dialog.showModal();
       assert.isNotNull(document.querySelector('.backdrop'));
+    });
+  });
+
+  suite('order', function() {
+    test('modal stacking order', function() {
+      dialog.showModal();
+
+      // Create incorrectly-named dialogs: front has a lower z-index, and back
+      // has a higher z-index.
+      var front = createDialog();
+      var back = createDialog();
+      front.style.zIndex = 100;
+      back.style.zIndex = 200;
+
+      // Show back first, then front. Thus we expect back to be behind front.
+      back.showModal();
+      front.showModal();
+
+      var zf = window.getComputedStyle(front).zIndex;
+      var bf = window.getComputedStyle(back).zIndex;
+      assert.isAbove(zf, bf, 'showModal order dictates z-index');
     });
   });
 
