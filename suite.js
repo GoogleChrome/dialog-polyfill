@@ -145,8 +145,76 @@ void function() {
     });
   });
 
-  suite('focus', function() {
-    test('focus allowed on non-modal', function() {
+  suite('form focus', function() {
+    test('no focus change on non-modal', function() {
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      dialog.appendChild(input);
+
+      var previous = document.activeElement;
+      dialog.show();
+      assert.equal(document.activeElement, previous);
+      dialog.close();
+    });
+    test('clear focus when nothing focusable in modal', function() {
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      document.body.appendChild(input);
+      input.focus();
+
+      var previous = document.activeElement;
+      dialog.showModal();
+      assert.notEqual(previous, document.activeElement);
+    });
+    test('default focus on modal', function() {
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      dialog.appendChild(input);
+
+      var anotherInput = cleanup(document.createElement('input'));
+      anotherInput.type = 'text';
+      dialog.appendChild(anotherInput);
+
+      dialog.showModal();
+      assert.equal(document.activeElement, input);
+    });
+    test('autofocus element chosen', function() {
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      dialog.appendChild(input);
+
+      var inputAF = cleanup(document.createElement('input'));
+      inputAF.type = 'text';
+      inputAF.autofocus = true;
+      dialog.appendChild(inputAF);
+
+      dialog.showModal();
+      assert.equal(document.activeElement, inputAF);
+    });
+    test('child modal dialog', function() {
+      dialog.showModal();
+
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      dialog.appendChild(input);
+      input.focus();
+      assert.equal(document.activeElement, input);
+
+      // NOTE: This is a single sub-test, but all the above tests could be run
+      // again in a sub-context (i.e., dialog within dialog).
+      var child = createDialog();
+      child.showModal();
+      assert.notEqual(document.activeElement, input,
+          'additional modal dialog should clear parent focus');
+
+      child.close();
+      assert.notEqual(document.activeElement, input,
+          'parent focus should not be restored');
+    });
+  });
+
+  suite('top layer / inert', function() {
+    test('background focus allowed on non-modal', function() {
       var input = cleanup(document.createElement('input'));
       input.type = 'text';
       document.body.appendChild(input);
@@ -161,18 +229,6 @@ void function() {
       assert.equal(document.activeElement, input,
           'non-modal should allow background focus');
     });
-    test('focus should be cleared on modal', function() {
-      var input = cleanup(document.createElement('input'));
-      input.type = 'text';
-      document.body.appendChild(input);
-
-      input.focus();
-      assert.equal(document.activeElement, input);
-
-      dialog.showModal();
-      assert.notEqual(document.activeElement, input,
-          'modal should clear background focus');
-    });
     test('modal disallows background focus', function() {
       var input = cleanup(document.createElement('input'));
       input.type = 'text';
@@ -182,24 +238,6 @@ void function() {
       input.focus();
       assert.notEqual(document.activeElement, input,
           'modal should disallow background focus');
-    });
-    test('sub-modal dialog focus enforced', function() {
-      var subDialog = createDialog();
-      dialog.showModal();
-
-      var input = cleanup(document.createElement('input'));
-      input.type = 'text';
-      dialog.appendChild(input);
-      input.focus();
-      assert.equal(document.activeElement, input);
-
-      subDialog.showModal();
-      assert.notEqual(document.activeElement, input,
-          'additional modal dialog should clear parent focus');
-
-      subDialog.close();
-      assert.notEqual(document.activeElement, input,
-          'parent focus should not be restored');
     });
   });
 
@@ -214,6 +252,9 @@ void function() {
       assert.equal(closeFired, 0);
 
       dialog.close();
+      assert.equal(closeFired, 1);
+
+      assert.throws(dialog.close);  // can't close already closed dialog
       assert.equal(closeFired, 1);
 
       dialog.showModal();
