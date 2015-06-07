@@ -32,32 +32,41 @@ void function() {
   }
 
   /**
+   * Cleans up any passed DOM elements.
+   *
+   * @param {!Element} el to clean up
+   * @return {!Element} the same element, for chaining
+   */
+  var cleanup = (function() {
+    var e = [];
+    teardown(function() {
+      e.forEach(function(el) {
+        try {
+          el.close();  // try to close dialogs
+        } catch (e) {}
+        el.parentElement && el.parentElement.removeChild(el);
+      });
+      e = [];
+    });
+
+    return function(el) {
+      e.push(el);
+      return el;
+    };
+  })();
+
+  /**
    * Creates a dialog for testing that will be cleaned up later.
    *
    * @param {string?} opt_content to be used as innerHTML
    */
-  var createDialog = (function() {
-    var cleanup = [];
-    teardown(function() {
-      cleanup.forEach(function(dialog) {
-        try {
-          dialog.close();
-        } catch (e) {}
-        if (dialog.parentElement) {
-          dialog.parentElement.removeChild(dialog);
-        }
-      });
-    });
-
-    return function(opt_content) {
-      var dialog = document.createElement('dialog');
-      dialog.innerHTML = opt_content || 'Dialog #' + (cleanup.length);
-      document.body.appendChild(dialog);
-      dialogPolyfill.registerDialog(dialog);
-      cleanup.push(dialog);
-      return dialog;
-    };
-  })();
+  function createDialog(opt_content) {
+    var dialog = document.createElement('dialog');
+    dialog.innerHTML = opt_content || 'Dialog #' + (cleanup.length);
+    document.body.appendChild(dialog);
+    dialogPolyfill.registerDialog(dialog);
+    return cleanup(dialog);
+  }
 
   var dialog;  // global dialog for all tests
   setup(function() {
@@ -90,7 +99,7 @@ void function() {
     test('recentering', function() {
       var pX = document.body.scrollLeft;
       var pY = document.body.scrollTop;
-      var big = document.createElement('div');
+      var big = cleanup(document.createElement('div'));
       big.style.height = '200vh';  // 2x view height
       document.body.appendChild(big);
 
@@ -109,7 +118,6 @@ void function() {
         var rect = dialog.getBoundingClientRect();
         assert.closeTo(rectAtScroll.top + scrollValue, rect.top, 1);
       } finally {
-        document.body.removeChild(big);
         window.scrollTo(pX, pY);
       }
     });
@@ -128,6 +136,61 @@ void function() {
       dialog.show();
       assert.isNull(document.querySelector('.backdrop'));
       dialog.close();
+    });
+    test('focus allowed on non-modal', function() {
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      document.body.appendChild(input);
+      input.focus();
+
+      dialog.show();
+      assert.equal(document.activeElement, input,
+          'non-modal dialog shouldn\'t clear focus');
+
+      document.body.focus();
+      input.focus();
+      assert.equal(document.activeElement, input,
+          'non-modal should allow background focus');
+    });
+    test('focus should be cleared on modal', function() {
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      document.body.appendChild(input);
+
+      input.focus();
+      assert.equal(document.activeElement, input);
+
+      dialog.showModal();
+      assert.notEqual(document.activeElement, input,
+          'modal should clear background focus');
+    });
+    test('modal disallows background focus', function() {
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      document.body.appendChild(input);
+
+      dialog.showModal();
+      input.focus();
+      assert.notEqual(document.activeElement, input,
+          'modal should disallow background focus');
+    });
+    test('sub-modal dialog focus enforced', function() {
+      var subDialog = createDialog();
+      dialog.showModal();
+
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      dialog.appendChild(input);
+      input.focus();
+      assert.equal(document.activeElement, input);
+
+      subDialog.showModal();
+      assert.notEqual(document.activeElement, input,
+          'additional modal dialog should clear parent focus');
+
+      subDialog.close();
+      assert.notEqual(document.activeElement, input,
+          'parent focus should not be restored');
     });
   });
 
