@@ -143,6 +143,9 @@ void function() {
       assert.isNull(document.querySelector('.backdrop'));
       dialog.close();
     });
+  });
+
+  suite('focus', function() {
     test('focus allowed on non-modal', function() {
       var input = cleanup(document.createElement('input'));
       input.type = 'text';
@@ -197,6 +200,25 @@ void function() {
       subDialog.close();
       assert.notEqual(document.activeElement, input,
           'parent focus should not be restored');
+    });
+  });
+
+  suite('events', function() {
+    test('close event', function() {
+      var closeFired = 0;
+      dialog.addEventListener('close', function() {
+        ++closeFired;
+      });
+
+      dialog.show();
+      assert.equal(closeFired, 0);
+
+      dialog.close();
+      assert.equal(closeFired, 1);
+
+      dialog.show();
+      dialog.close();
+      assert.equal(closeFired, 2);
     });
   });
 
