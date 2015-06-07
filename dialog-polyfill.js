@@ -11,6 +11,22 @@ var dialogPolyfill = (function() {
     supportCustomEvent.prototype = window.Event.prototype;
   }
 
+  /**
+   * Finds the nearest <dialog> from the passed element.
+   *
+   * @param {Element} el to search from
+   * @param {HTMLDialogElement} dialog found
+   */
+  function findNearestDialog(el) {
+    while (el) {
+      if (el.nodeName == 'DIALOG') {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+
   var dialogPolyfill = {};
 
   dialogPolyfill.reposition = function(element) {
@@ -176,12 +192,6 @@ var dialogPolyfill = (function() {
       console.warn("This browser already supports <dialog>, the polyfill " +
           "may not work correctly.");
     }
-    element.addEventListener('dialog_submit', function(e) {
-      element.close(e.detail.target.value);
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
     element.show = dialogPolyfill.showDialog.bind(element, false);
     element.showModal = dialogPolyfill.showDialog.bind(element, true);
     element.close = dialogPolyfill.close.bind(element);
@@ -217,26 +227,28 @@ var dialogPolyfill = (function() {
           e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
       document.body.dispatchEvent(redirectedEvent);
     });
-    window.addEventListener('load', function() {
-      var forms = document.getElementsByTagName('form'),
-      i = forms.length;
-      while(i--) {
-        (function(form) {
-          if (form.getAttribute('method') == 'dialog') { // form.method won't return 'dialog'
-            form.addEventListener('click', function(e) {
-              if (e.target.type == 'submit') {
-                var event = new supportCustomEvent('dialog_submit', {
-                  bubbles: true,
-                  detail: { target: e.target }
-                });
-                this.dispatchEvent(event);
-                e.preventDefault();
-              }
-            });
-          }
-        })(forms[i]);
-      }
-    })
+
+    // TODO: Only install when any dialogs are open.
+    document.addEventListener('submit', function(ev) {
+      var method = ev.target.getAttribute('method').toLowerCase();
+      if (method != 'dialog') { return; }
+      ev.preventDefault();
+
+      var dialog = findNearestDialog(ev.target);
+      if (!dialog) { return; }
+
+      // FIXME: The original event doesn't contain the INPUT element used to
+      // submit the form (if any). Look in some possible places.
+      var returnValue;
+      var cands = [document.activeElement, ev.explicitOriginalTarget];
+      cands.some(function(cand) {
+        if (cand && cand.nodeName == 'INPUT' && cand.form == ev.target) {
+          returnValue = cand.value;
+          return true;
+        }
+      });
+      dialog.close(returnValue);
+    }, true);
   };
 
   dialogPolyfill.DialogManager.prototype.createFocusable = function(tabIndex) {

@@ -263,6 +263,28 @@ void function() {
     });
   });
 
+  suite('form', function() {
+    test('dialog method', function() {
+      var value = 'ExpectedValue' + Math.random();
+
+      var form = document.createElement('form');
+      form.method = 'dialog';
+      dialog.appendChild(form);
+
+      var input = document.createElement('input');
+      input.type = 'submit';
+      input.value = value;
+      form.appendChild(input);
+
+      dialog.show();
+      input.focus();  // emulate user focus action
+      input.click();
+
+      assert.isFalse(dialog.open);
+      assert.equal(dialog.returnValue, value);
+    });
+  });
+
   suite('order', function() {
     test('non-modal unchanged', function() {
       var one = createDialog();
