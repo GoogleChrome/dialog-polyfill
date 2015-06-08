@@ -15,12 +15,12 @@ var dialogPolyfill = (function() {
    * Finds the nearest <dialog> from the passed element.
    *
    * @param {Element} el to search from
-   * @param {HTMLDialogElement} dialog found
+   * @return {HTMLDialogElement} dialog found
    */
   function findNearestDialog(el) {
     while (el) {
       if (el.nodeName == 'DIALOG') {
-        return el;
+        return /** @type {HTMLDialogElement} */ (el);
       }
       el = el.parentElement;
     }
@@ -185,7 +185,7 @@ var dialogPolyfill = (function() {
       if (method != 'dialog') { return; }
       ev.preventDefault();
 
-      var dialog = findNearestDialog(ev.target);
+      var dialog = findNearestDialog(/** @type {Element} */ (ev.target));
       if (!dialog) { return; }
 
       // FIXME: The original event doesn't contain the INPUT element used to
