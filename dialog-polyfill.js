@@ -145,7 +145,7 @@ var dialogPolyfill = (function() {
       bubbles: true,
       cancelable: true
     });
-    this.dispatchEvent(closeEvent);
+    this.dispatchEvent(closeEvent);  // TODO: handle cancelling this event
 
     return this.returnValue;
   };
