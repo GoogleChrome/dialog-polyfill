@@ -1,4 +1,4 @@
-var dialogPolyfill = (function() {
+(function() {
 
   var supportCustomEvent = window.CustomEvent;
   if (!supportCustomEvent || typeof supportCustomEvent == 'object') {
@@ -173,6 +173,9 @@ var dialogPolyfill = (function() {
   var TOP_LAYER_ZINDEX = 100000;
   var MAX_PENDING_DIALOGS = 100000;
 
+  /**
+   * @constructor
+   */
   dialogPolyfill.DialogManager = function() {
     this.pendingDialogStack = [];
     this.overlay = document.createElement('div');
@@ -320,5 +323,6 @@ var dialogPolyfill = (function() {
     dialog.close(returnValue);
   }, true);
 
-  return dialogPolyfill;
+  window['dialogPolyfill'] = dialogPolyfill;
+  dialogPolyfill['registerDialog'] = dialogPolyfill.registerDialog;
 })();
