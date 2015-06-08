@@ -88,21 +88,38 @@ void function() {
     dialog = createDialog('Default Dialog');
   });
 
-  test('basic', function() {
-    assert.isFalse(dialog.hasAttribute('open'));
-    dialog.show();
-    assert.isTrue(dialog.hasAttribute('open'));
-    assert.isTrue(dialog.open);
+  suite('basic', function() {
+    test('show and close', function() {
+      assert.isFalse(dialog.hasAttribute('open'));
+      dialog.show();
+      assert.isTrue(dialog.hasAttribute('open'));
+      assert.isTrue(dialog.open);
 
-    var returnValue = 1234;
-    dialog.close(returnValue);
-    assert.isFalse(dialog.hasAttribute('open'));
-    assert.equal(dialog.returnValue, returnValue);
+      var returnValue = 1234;
+      dialog.close(returnValue);
+      assert.isFalse(dialog.hasAttribute('open'));
+      assert.equal(dialog.returnValue, returnValue);
 
-    dialog.show();
-    dialog.close();
-    assert.isFalse(dialog.open);
-    assert.equal(dialog.returnValue, returnValue);
+      dialog.show();
+      dialog.close();
+      assert.isFalse(dialog.open);
+      assert.equal(dialog.returnValue, returnValue);
+    });
+    test('open property', function() {
+      assert.isFalse(dialog.hasAttribute('open'));
+      dialog.show();
+      assert.isTrue(dialog.hasAttribute('open'));
+      assert.isTrue(dialog.open);
+
+      dialog.open = false;
+      assert.isFalse(dialog.open);
+      assert.isFalse(dialog.hasAttribute('open'),
+          'open property should clear attribute');
+      assert.throws(dialog.close);
+
+      var overlay = document.querySelector('._dialog_overlay');
+      assert.isNull(overlay);
+    });
   });
 
   suite('position', function() {
