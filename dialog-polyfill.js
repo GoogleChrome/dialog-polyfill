@@ -99,6 +99,7 @@ var dialogPolyfill = (function() {
       // Find element with `autofocus` attribute or first form control.
       var target = this.querySelector('[autofocus]:not([disabled])');
       if (!target) {
+        // TODO: technically this is 'any focusable area'
         var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
         var query = opts.map(function(el) {
           return el + ':not([disabled])';
