@@ -178,28 +178,6 @@ var dialogPolyfill = (function() {
     this.overlay.addEventListener('click', function(e) {
       e.stopPropagation();
     });
-
-    // TODO: Only install when any dialogs are open.
-    document.addEventListener('submit', function(ev) {
-      var method = ev.target.getAttribute('method').toLowerCase();
-      if (method != 'dialog') { return; }
-      ev.preventDefault();
-
-      var dialog = findNearestDialog(/** @type {Element} */ (ev.target));
-      if (!dialog) { return; }
-
-      // FIXME: The original event doesn't contain the INPUT element used to
-      // submit the form (if any). Look in some possible places.
-      var returnValue;
-      var cands = [document.activeElement, ev.explicitOriginalTarget];
-      cands.some(function(cand) {
-        if (cand && cand.nodeName == 'INPUT' && cand.form == ev.target) {
-          returnValue = cand.value;
-          return true;
-        }
-      });
-      dialog.close(returnValue);
-    }, true);
   };
 
   dialogPolyfill.DialogManager.prototype.blockDocument = function() {
@@ -319,6 +297,31 @@ var dialogPolyfill = (function() {
 
   document.addEventListener('keydown',
       dialogPolyfill.dm.handleKey.bind(dialogPolyfill.dm));
+
+  /**
+   * Global form 'dialog' method handler. Closes a dialog correctly on submit
+   * and possibly sets its return value.
+   */
+  document.addEventListener('submit', function(ev) {
+    var method = ev.target.getAttribute('method').toLowerCase();
+    if (method != 'dialog') { return; }
+    ev.preventDefault();
+
+    var dialog = findNearestDialog(/** @type {Element} */ (ev.target));
+    if (!dialog) { return; }
+
+    // FIXME: The original event doesn't contain the INPUT element used to
+    // submit the form (if any). Look in some possible places.
+    var returnValue;
+    var cands = [document.activeElement, ev.explicitOriginalTarget];
+    cands.some(function(cand) {
+      if (cand && cand.nodeName == 'INPUT' && cand.form == ev.target) {
+        returnValue = cand.value;
+        return true;
+      }
+    });
+    dialog.close(returnValue);
+  }, true);
 
   return dialogPolyfill;
 })();
