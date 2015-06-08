@@ -32,6 +32,21 @@ void function() {
   }
 
   /**
+   * Creates a fake KeyboardEvent.
+   *
+   * @param {number} keyCode to press
+   * @param {string?} opt_type to use, default keydown
+   * @return {!Event} event
+   */
+  function createKeyboardEvent(keyCode, opt_type) {
+    var ev = document.createEvent('Events');
+    ev.initEvent(opt_type || 'keydown', true, true);
+    ev.keyCode = keyCode;
+    ev.which = keyCode;
+    return ev;
+  }
+
+  /**
    * Cleans up any passed DOM elements.
    *
    * @param {!Element} el to clean up
@@ -278,6 +293,26 @@ void function() {
       dialog.showModal();
       dialog.close();
       assert.equal(closeFired, 2);
+    });
+    test('cancel event', function() {
+      dialog.showModal();
+      dialog.dispatchEvent(createKeyboardEvent(27));
+      assert.isFalse(dialog.open, 'esc should close modal');
+
+      var cancelFired = 0;
+      dialog.addEventListener('cancel', function() {
+        ++cancelFired;
+      });
+      dialog.showModal();
+      dialog.dispatchEvent(createKeyboardEvent(27));
+      assert.equal(cancelFired, 1, 'expected cancel to be fired');
+      assert.isFalse(dialog.open), 'esc should close modal again';
+
+      // Sanity-check that non-modals aren't effected.
+      dialog.show();
+      dialog.dispatchEvent(createKeyboardEvent(27));
+      assert.isTrue(dialog.open, 'esc should only close modal dialog');
+      assert.equal(cancelFired, 1);
     });
     test('overlay click is prevented', function() {
       dialog.showModal();
