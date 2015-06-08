@@ -106,6 +106,8 @@ var dialogPolyfill = (function() {
         }).join(', ');
         target = this.querySelector(query);
       }
+
+      document.activeElement && document.activeElement.blur();
       target && target.focus();
     }
 
@@ -179,80 +181,69 @@ var dialogPolyfill = (function() {
     this.overlay.addEventListener('click', function(e) {
       e.stopPropagation();
     });
+
+    this.handleKey_ = this.handleKey_.bind(this);
+    this.handleFocus_ = this.handleFocus_.bind(this);
   };
 
+  /**
+   * Called on the first modal dialog being shown. Adds the overlay and related
+   * handlers.
+   */
   dialogPolyfill.DialogManager.prototype.blockDocument = function() {
-    if (!document.body.contains(this.overlay)) {
-      document.body.appendChild(this.overlay);
-
-      // On Safari/Mac (and possibly other browsers), the documentElement is
-      // not focusable. This is required for modal dialogs as it is the first
-      // element to be hit by a tab event, and further tabs are redirected to
-      // the most visible dialog.
-      if (this.needsDocumentElementFocus === undefined) {
-        document.documentElement.focus();
-        this.needsDocumentElementFocus =
-            (document.activeElement != document.documentElement);
-      }
-      if (this.needsDocumentElementFocus) {
-        document.documentElement.tabIndex = 1;
-      }
-    }
+    document.body.appendChild(this.overlay);
+    document.body.addEventListener('focus', this.handleFocus_, true);
+    document.addEventListener('keydown', this.handleKey_);
   };
 
+  /**
+   * Called on the first modal dialog being removed, i.e., when no more modal
+   * dialogs are visible.
+   */
   dialogPolyfill.DialogManager.prototype.unblockDocument = function() {
     document.body.removeChild(this.overlay);
-    if (this.needsDocumentElementFocus) {
-      // TODO: Restore the previous tabIndex, rather than clearing it.
-      document.documentElement.tabIndex = '';
-    }
+    document.body.removeEventListener('focus', this.handleFocus_, true);
+    document.removeEventListener('keydown', this.handleKey_);
   };
 
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
-    if (this.pendingDialogStack.length == 0) {
-      this.unblockDocument();
-      return;
-    }
-    this.blockDocument();
-
     var zIndex = TOP_LAYER_ZINDEX;
     for (var i = 0; i < this.pendingDialogStack.length; i++) {
-      if (i == this.pendingDialogStack.length - 1)
+      if (i == this.pendingDialogStack.length - 1) {
         this.overlay.style.zIndex = zIndex++;
+      }
       var dialog = this.pendingDialogStack[i];
       dialog.dialogPolyfillInfo.backdrop.style.zIndex = zIndex++;
       dialog.style.zIndex = zIndex++;
     }
   };
 
-  var tabDirection = 0;
+  dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
+    var candidate = findNearestDialog(/** @type {Element} */ (event.target));
+    var dialog = this.pendingDialogStack[this.pendingDialogStack.length - 1];
 
-  dialogPolyfill.DialogManager.prototype.handleKey = function(event) {
-    var dialogCount = this.pendingDialogStack.length;
-    if (dialogCount == 0) {
-      return;
+    if (candidate != dialog) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.target.blur();
+      // TODO: Focus on the browser chrome (aka document) or the dialog itself
+      // depending on the tab direction.
+      return false;
     }
-    var dialog = this.pendingDialogStack[dialogCount - 1];
+  };
 
-    tabDirection = 0;
-
-    switch (event.keyCode) {
-    case 9: /* tab */
-      tabDirection = event.shiftKey ? +1 : -1;
-      break;
-
-    case 27: /* esc */
+  dialogPolyfill.DialogManager.prototype.handleKey_ = function(event) {
+    if (event.keyCode == 27) {
       event.preventDefault();
       event.stopPropagation();
       var cancelEvent = new supportCustomEvent('cancel', {
         bubbles: false,
         cancelable: true
       });
+      var dialog = this.pendingDialogStack[this.pendingDialogStack.length - 1];
       if (dialog.dispatchEvent(cancelEvent)) {
         dialog.close();
       }
-      break;
-
     }
   };
 
@@ -275,7 +266,11 @@ var dialogPolyfill = (function() {
     dialog.parentNode.insertBefore(backdrop, dialog.nextSibling);
     dialog.dialogPolyfillInfo.backdrop = backdrop;
     dialog.dialogPolyfillInfo.clickEventListener = clickEventListener;
+
     this.pendingDialogStack.push(dialog);
+    if (this.pendingDialogStack.length == 1) {
+      this.blockDocument();
+    }
     this.updateStacking();
   };
 
@@ -292,12 +287,13 @@ var dialogPolyfill = (function() {
     dialog.dialogPolyfillInfo.backdrop = null;
     dialog.dialogPolyfillInfo.clickEventListener = null;
     this.updateStacking();
+
+    if (this.pendingDialogStack.length == 0) {
+      this.unblockDocument();
+    }
   };
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
-
-  document.addEventListener('keydown',
-      dialogPolyfill.dm.handleKey.bind(dialogPolyfill.dm));
 
   /**
    * Global form 'dialog' method handler. Closes a dialog correctly on submit

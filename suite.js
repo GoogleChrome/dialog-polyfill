@@ -269,6 +269,14 @@ void function() {
 
       dialog.showModal();
       input.focus();
+
+      if (!document.hasFocus()) {
+        // Browsers won't trigger a focus event if they're not in the
+        // foreground, so we can't intercept it. However, they'll fire one when
+        // restored, before a user can get to any incorrectly focused element.
+        console.warn('background focus test reqiures document focus');
+        document.documentElement.focus();
+      }
       assert.notEqual(document.activeElement, input,
           'modal should disallow background focus');
     });
