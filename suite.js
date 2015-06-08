@@ -168,13 +168,9 @@ void function() {
         ++clickFired;
       };
 
-      try {
-        dialog.addEventListener('click', helper)
-        backdrop.click();
-        assert.equal(clickFired, 1);
-      } finally {
-        document.body.removeEventListener('click', helper);
-      }
+      dialog.addEventListener('click', helper)
+      backdrop.click();
+      assert.equal(clickFired, 1);
     });
   });
 
