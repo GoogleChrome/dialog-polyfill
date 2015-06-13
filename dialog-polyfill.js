@@ -249,8 +249,7 @@
       console.warn("This browser already supports <dialog>, the polyfill " +
           "may not work correctly.");
     }
-    var pfi = new dialogPolyfillInfo(element);
-    // TODO: ?
+    new dialogPolyfillInfo(element);
   };
 
   // The overlay is used to simulate how a modal dialog blocks the document. The
