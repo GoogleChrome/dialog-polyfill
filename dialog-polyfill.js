@@ -115,9 +115,9 @@
       e.stopPropagation();
     },
 
-    updateZIndex: function(dialogZ, backdropZ) {
-      this.dialog_.style.zIndex = dialogZ;
+    updateZIndex: function(backdropZ, dialogZ) {
       this.backdrop_.style.zIndex = backdropZ;
+      this.dialog_.style.zIndex = dialogZ;
     },
 
     /**
