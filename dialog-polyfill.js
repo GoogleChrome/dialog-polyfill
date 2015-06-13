@@ -57,14 +57,9 @@
 
     if ('MutationObserver' in window) {
       var mo = new MutationObserver(function(mutations) {
-        var any = mutations.some(function(m) {
-          return 'open' == m.attributeName;
-        });
-        if (any) {
-          this.setOpen(dialog.getAttribute('open') !== null);
-        }
+        this.setOpen(dialog.hasAttribute('open'));
       }.bind(this));
-      mo.observe(dialog, { attributes: true });
+      mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
     }
 
     Object.defineProperty(dialog, 'open', {
@@ -138,9 +133,7 @@
 
       this.modal_ = modal;
       this.open_ = true;  // set open_ before attribute for observers
-      if (this.dialog_.getAttribute('open') === null) {
-        this.dialog_.setAttribute('open', '');  // allow user value of 'open'
-      }
+      this.dialog_.hasAttribute('open') || this.dialog_.setAttribute('open', '');
 
       if (modal) {
         // Insert backdrop.
