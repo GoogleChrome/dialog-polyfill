@@ -66,6 +66,10 @@
 
   dialogPolyfillInfo.prototype = {
 
+    get dialog() {
+      return this.dialog_;
+    },
+
     /**
      * @param {boolean} value whether to open or close this dialog
      */
@@ -99,6 +103,11 @@
       e.stopPropagation();
     },
 
+    updateZIndex: function(dialogZ, backdropZ) {
+      this.dialog_.style.zIndex = dialogZ;
+      this.backdrop_.style.zIndex = backdropZ;
+    },
+
     /**
      * Shows the dialog.
      *
@@ -111,6 +120,10 @@
         }
         return;  // silently OK if we weren't asked to be shown modally
       }
+      if (modal && !dialogPolyfill.dm.pushDialog(this)) {
+        throw 'Failed to execute \'showModal\' on dialog: Too many modal dialogs open.';
+      }
+
       this.open_ = true;
       this.modal_ = modal;
       this.dialog_.setAttribute('open', '');
@@ -140,9 +153,6 @@
         this.replacedStyleTop_ = true;
       } else {
         this.replacedStyleTop_ = false;
-      }
-      if (modal) {
-        dialogPolyfill.dm.pushDialog(this.dialog_, this.backdrop_);
       }
     },
 
@@ -175,7 +185,7 @@
         if (this.backdrop_.parentElement) {
           this.backdrop_.parentElement.removeChild(this.backdrop_);
         }
-        dialogPolyfill.dm.removeDialog(this.dialog_);
+        dialogPolyfill.dm.removeDialog(this);
       }
 
       // Triggering "close" event for any attached listeners on the <dialog>.
@@ -252,35 +262,40 @@
     new dialogPolyfillInfo(element);
   };
 
-  // The overlay is used to simulate how a modal dialog blocks the document. The
-  // blocking dialog is positioned on top of the overlay, and the rest of the
-  // dialogs on the pending dialog stack are positioned below it. In the actual
-  // implementation, the modal dialog stacking is controlled by the top layer,
-  // where z-index has no effect.
-  var TOP_LAYER_ZINDEX = 100000;
-  var MAX_PENDING_DIALOGS = 100000;
-
   /**
    * @constructor
    */
   dialogPolyfill.DialogManager = function() {
+    /** @type {!Array<!dialogPolyfillInfo>} */
     this.pendingDialogStack = [];
+
+    // The overlay is used to simulate how a modal dialog blocks the document.
+    // The blocking dialog is positioned on top of the overlay, and the rest of
+    // the dialogs on the pending dialog stack are positioned below it. In the
+    // actual  implementation, the modal dialog stacking is controlled by the
+    // top layer, where z-index has no effect.
     this.overlay = document.createElement('div');
     this.overlay.className = '_dialog_overlay';
-
     this.overlay.addEventListener('click', function(e) {
       e.stopPropagation();
     });
 
     this.handleKey_ = this.handleKey_.bind(this);
     this.handleFocus_ = this.handleFocus_.bind(this);
+
+    this.zIndexLow_ = 100000;
+    this.zIndexHigh_ = 100000 + 150;
   };
 
   /**
    * @return {Element} the top HTML dialog element, if any
    */
   dialogPolyfill.DialogManager.prototype.topDialogElement = function() {
-    return this.pendingDialogStack[this.pendingDialogStack.length - 1].dialog;
+    if (this.pendingDialogStack.length) {
+      var t = this.pendingDialogStack[this.pendingDialogStack.length - 1];
+      return t.dialog;
+    }
+    return null;
   };
 
   /**
@@ -304,14 +319,13 @@
   };
 
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
-    var zIndex = TOP_LAYER_ZINDEX;
+    var zIndex = this.zIndexLow_;
+
     for (var i = 0; i < this.pendingDialogStack.length; i++) {
       if (i == this.pendingDialogStack.length - 1) {
         this.overlay.style.zIndex = zIndex++;
       }
-      var ds = this.pendingDialogStack[i];
-      ds.backdrop.style.zIndex = zIndex++;
-      ds.dialog.style.zIndex = zIndex++;
+      this.pendingDialogStack[i].updateZIndex(zIndex++, zIndex++);
     }
   };
 
@@ -342,28 +356,30 @@
     }
   };
 
-  dialogPolyfill.DialogManager.prototype.pushDialog = function(dialog, backdrop) {
-    if (this.pendingDialogStack.length >= MAX_PENDING_DIALOGS) {
-      throw "Too many modal dialogs";
+  /**
+   * @param {!dialogPolyfillInfo} dpi
+   * @return {boolean} whether the dialog was allowed
+   */
+  dialogPolyfill.DialogManager.prototype.pushDialog = function(dpi) {
+    var allowed = (this.zIndexHigh_ - this.zIndexLow_) / 2 - 1;
+    if (this.pendingDialogStack.length >= allowed) {
+      return false;
     }
-    this.pendingDialogStack.push({dialog: dialog, backdrop: backdrop});
+
+    this.pendingDialogStack.push(dpi);
     if (this.pendingDialogStack.length == 1) {
       this.blockDocument();
     }
     this.updateStacking();
+    return true;
   };
 
-  dialogPolyfill.DialogManager.prototype.removeDialog = function(dialog) {
-    var index = -1;
-    for (var i = 0; i < this.pendingDialogStack.length; ++i) {
-      if (this.pendingDialogStack[i].dialog == dialog) {
-        index = i;
-        break;
-      }
-    }
-    if (index == -1) {
-      return;
-    }
+  /**
+   * @param {dialogPolyfillInfo} dpi
+   */
+  dialogPolyfill.DialogManager.prototype.removeDialog = function(dpi) {
+    var index = this.pendingDialogStack.indexOf(dpi);
+    if (index == -1) { return; }
 
     this.pendingDialogStack.splice(index, 1);
     this.updateStacking();
