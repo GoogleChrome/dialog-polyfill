@@ -120,6 +120,21 @@ void function() {
       var overlay = document.querySelector('._dialog_overlay');
       assert.isNull(overlay);
     });
+    test('show/showModal interaction', function() {
+      assert.isFalse(dialog.hasAttribute('open'));
+      dialog.show();
+
+      assert.doesNotThrow(dialog.show);
+      assert.throws(dialog.showModal);
+
+      dialog.open = false;
+      assert.doesNotThrow(dialog.showModal);
+      assert.doesNotThrow(dialog.show);  // show after showModal does nothing
+      assert.throws(dialog.showModal);
+      // TODO: check dialog is still modal
+
+      assert.isTrue(dialog.open);
+    });
   });
 
   suite('position', function() {

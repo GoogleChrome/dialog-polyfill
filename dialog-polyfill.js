@@ -71,7 +71,7 @@
      */
     setOpen: function(value) {
       if (value && !this.open_) {
-        this.show();
+        this.show(this.modal_);
       } else if (!value && this.open_) {
         this.close();
       }
@@ -102,19 +102,20 @@
     /**
      * Shows the dialog.
      *
-     * @param {boolean=} opt_modal whether to display modal
+     * @param {boolean} modal whether to display modal
      */
-    show: function(opt_modal) {
+    show: function(modal) {
       if (this.open_) {
-        throw 'InvalidStateError: showDialog called on open dialog';
+        if (modal) {
+          throw 'Failed to execute \'showModal\' on dialog: The element is already open, and therefore cannot be opened modally.';
+        }
+        return;  // silently OK if we weren't asked to be shown modally
       }
       this.open_ = true;
+      this.modal_ = modal;
       this.dialog_.setAttribute('open', '');
-      if (opt_modal !== undefined) {
-        this.modal_ = opt_modal;
-      }
 
-      if (this.modal_) {
+      if (modal) {
         // Insert backdrop.
         this.backdrop_.addEventListener('click', this.backdropClick_);
         this.dialog_.parentNode.insertBefore(this.backdrop_,
@@ -140,7 +141,7 @@
       } else {
         this.replacedStyleTop_ = false;
       }
-      if (this.modal_) {
+      if (modal) {
         dialogPolyfill.dm.pushDialog(this.dialog_, this.backdrop_);
       }
     },
