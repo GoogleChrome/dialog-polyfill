@@ -55,6 +55,18 @@
     dialog.showModal = this.show.bind(this, true);
     dialog.close = this.close.bind(this);
 
+    if ('MutationObserver' in window) {
+      var mo = new MutationObserver(function(mutations) {
+        var any = mutations.some(function(m) {
+          return 'open' == m.attributeName;
+        });
+        if (any) {
+          this.setOpen(dialog.getAttribute('open') !== null);
+        }
+      }.bind(this));
+      mo.observe(dialog, { attributes: true });
+    }
+
     Object.defineProperty(dialog, 'open', {
       set: this.setOpen.bind(this), get: this.getOpen.bind(this)
     });
@@ -124,9 +136,11 @@
         throw 'Failed to execute \'showModal\' on dialog: Too many modal dialogs open.';
       }
 
-      this.open_ = true;
       this.modal_ = modal;
-      this.dialog_.setAttribute('open', '');
+      this.open_ = true;  // set open_ before attribute for observers
+      if (this.dialog_.getAttribute('open') === null) {
+        this.dialog_.setAttribute('open', '');  // allow user value of 'open'
+      }
 
       if (modal) {
         // Insert backdrop.
@@ -165,7 +179,7 @@
       if (!this.open_) {
         throw 'InvalidStateError: close called on closed dialog';
       }
-      this.open_ = false;
+      this.open_ = false;  // set open_ before attribute for observers
       this.dialog_.removeAttribute('open');
 
       // Leave returnValue untouched in case it was set directly on the element
