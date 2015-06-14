@@ -106,18 +106,28 @@ void function() {
   });
 
   suite('position', function() {
-    test('default centering', function() {
+    test('non-modal is not centered', function() {
+      var el = cleanup(document.createElement('div'));
+      dialog.parentNode.insertBefore(el, dialog);
+      var testRect = el.getBoundingClientRect();
+
       dialog.show();
+      var rect = dialog.getBoundingClientRect();
+
+      assert.equal(rect.top, testRect.top, 'dialog should not be centered');
+    });
+    test('default modal centering', function() {
+      dialog.showModal();
       checkDialogCenter();
     });
-    test('respect static position', function() {
+    test('modal respects static position', function() {
       dialog.style.top = '10px';
-      dialog.show();
+      dialog.showModal();
 
       var rect = dialog.getBoundingClientRect();
       assert.equal(rect.top, 10);
     });
-    test('recentering', function() {
+    test('modal recentering', function() {
       var pX = document.body.scrollLeft;
       var pY = document.body.scrollTop;
       var big = cleanup(document.createElement('div'));
@@ -126,11 +136,11 @@ void function() {
 
       try {
         var scrollValue = 200;  // don't use incredibly large values
-        dialog.show();
+        dialog.showModal();
         dialog.close();
 
         window.scrollTo(0, scrollValue);
-        dialog.show();
+        dialog.showModal();
         checkDialogCenter();  // must be centered, even after scroll
         var rectAtScroll = dialog.getBoundingClientRect();
 
