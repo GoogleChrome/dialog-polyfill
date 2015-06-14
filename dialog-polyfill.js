@@ -47,28 +47,34 @@
    */
   function dialogPolyfillInfo(dialog) {
     this.dialog_ = dialog;
-    this.open_ = dialog.hasAttribute('open');
-    this.modal_ = false;
+    this.previousOpen_ = false;
     this.replacedStyleTop_ = false;
 
-    dialog.show = this.show.bind(this, false);
-    dialog.showModal = this.show.bind(this, true);
+    dialog.show = this.show.bind(this);
+    dialog.showModal = this.showModal.bind(this);
     dialog.close = this.close.bind(this);
 
+    this.observeOpen_ = this.observeOpen_.bind(this);
     if ('MutationObserver' in window) {
-      var mo = new MutationObserver(function(mutations) {
-        this.setOpen(dialog.hasAttribute('open'));
-      }.bind(this));
+      var mo = new MutationObserver(this.observeOpen_);
       mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
+    } else {
+      // TODO: Support for IE9-10.
     }
+    dialog.addEventListener('propertychange', function(ev) {
+      console.info('prop change', ev);
+    });
 
     Object.defineProperty(dialog, 'open', {
-      set: this.setOpen.bind(this), get: this.getOpen.bind(this)
+      set: this.setOpen.bind(this),
+      get: dialog.hasAttribute.bind(dialog, 'open')
     });
 
     this.backdrop_ = document.createElement('div');
     this.backdrop_.className = 'backdrop';
     this.backdropClick_ = this.backdropClick_.bind(this);
+
+    this.setOpen(dialog.hasAttribute('open'));
   }
 
   dialogPolyfillInfo.prototype = {
@@ -78,21 +84,46 @@
     },
 
     /**
-     * @param {boolean} value whether to open or close this dialog
+     * Called when a change to the 'open' attribute is observed.
      */
-    setOpen: function(value) {
-      if (value && !this.open_) {
-        this.show(this.modal_);
-      } else if (!value && this.open_) {
-        this.close();
+    observeOpen_: function() {
+      var value = this.dialog_.hasAttribute('open');
+      if (value === this.previousOpen_) { return; }
+      this.previousOpen_ = value;
+      if (value) {
+        if (dialogPolyfill.needsCentering(this.dialog_)) {
+          dialogPolyfill.reposition(this.dialog_);
+          this.replacedStyleTop_ = true;
+        } else {
+          this.replacedStyleTop_ = false;
+        }
+      } else {
+        // This won't match the native <dialog> exactly because if the user set
+        // top on a centered polyfill dialog, that top gets thrown away when the
+        // dialog is closed. Not sure it's possible to polyfill this perfectly.
+        if (this.replacedStyleTop_) {
+          this.dialog_.style.top = 'auto';
+        }
+
+        // Optimistically clear the modal part of this <dialog>.
+        this.backdrop_.removeEventListener('click', this.backdropClick_);
+        if (this.backdrop_.parentElement) {
+          this.backdrop_.parentElement.removeChild(this.backdrop_);
+        }
+        dialogPolyfill.dm.removeDialog(this);
       }
     },
 
     /**
-     * @return {boolean} whether this dialog is open
+     * @param {boolean} value whether to open or close this dialog
      */
-    getOpen: function() {
-      return this.open_;
+    setOpen: function(value) {
+      if (value) {
+        this.dialog_.hasAttribute('open') || this.dialog_.setAttribute('open', '');
+      } else {
+        this.dialog_.removeAttribute('open');
+      }
+      this.observeOpen_();
     },
 
     /**
@@ -117,50 +148,43 @@
 
     /**
      * Shows the dialog.
-     *
-     * @param {boolean} modal whether to display modal
      */
-    show: function(modal) {
-      if (this.open_) {
-        if (modal) {
-          throw 'Failed to execute \'showModal\' on dialog: The element is already open, and therefore cannot be opened modally.';
-        }
-        return;  // silently OK if we weren't asked to be shown modally
+    show: function() {
+      this.setOpen(true);
+    },
+
+    /**
+     * Show this dialog modally.
+     */
+    showModal: function() {
+      if (this.dialog_.hasAttribute('open')) {
+        throw 'Failed to execute \'showModal\' on dialog: The element is already open, and therefore cannot be opened modally.';
       }
-      if (modal && !dialogPolyfill.dm.pushDialog(this)) {
-        throw 'Failed to execute \'showModal\' on dialog: Too many modal dialogs open.';
-      }
-
-      this.modal_ = modal;
-      this.open_ = true;  // set open_ before attribute for observers
-      this.dialog_.hasAttribute('open') || this.dialog_.setAttribute('open', '');
-
-      if (modal) {
-        // Insert backdrop.
-        this.backdrop_.addEventListener('click', this.backdropClick_);
-        this.dialog_.parentNode.insertBefore(this.backdrop_,
-            this.dialog_.nextSibling);
-
-        // Find element with `autofocus` attribute or first form control.
-        var target = this.dialog_.querySelector('[autofocus]:not([disabled])');
-        if (!target) {
-          // TODO: technically this is 'any focusable area'
-          var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
-          var query = opts.map(function(el) {
-            return el + ':not([disabled])';
-          }).join(', ');
-          target = this.dialog_.querySelector(query);
-        }
-        document.activeElement && document.activeElement.blur();
-        target && target.focus();
+      if (!document.body.contains(this.dialog_)) {
+        throw 'Failed to execute \'showModal\' on dialog: The element is not in a Document.'
       }
 
-      if (dialogPolyfill.needsCentering(this.dialog_)) {
-        dialogPolyfill.reposition(this.dialog_);
-        this.replacedStyleTop_ = true;
-      } else {
-        this.replacedStyleTop_ = false;
+      this.setOpen(true);
+
+      dialogPolyfill.dm.pushDialog(this);
+
+      // Insert backdrop.
+      this.backdrop_.addEventListener('click', this.backdropClick_);
+      this.dialog_.parentNode.insertBefore(this.backdrop_,
+          this.dialog_.nextSibling);
+
+      // Find element with `autofocus` attribute or first form control.
+      var target = this.dialog_.querySelector('[autofocus]:not([disabled])');
+      if (!target) {
+        // TODO: technically this is 'any focusable area'
+        var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
+        var query = opts.map(function(el) {
+          return el + ':not([disabled])';
+        }).join(', ');
+        target = this.dialog_.querySelector(query);
       }
+      document.activeElement && document.activeElement.blur();
+      target && target.focus();
     },
 
     /**
@@ -169,31 +193,16 @@
      * @param {*=} opt_returnValue to use as the returnValue
      */
     close: function(opt_returnValue) {
-      if (!this.open_) {
-        throw 'InvalidStateError: close called on closed dialog';
+      if (!this.dialog_.hasAttribute('open')) {
+        throw 'Failed to execute \'close\' on dialog: The element does not have an \'open\' attribute, and therefore cannot be closed.'
       }
-      this.open_ = false;  // set open_ before attribute for observers
-      this.dialog_.removeAttribute('open');
 
       // Leave returnValue untouched in case it was set directly on the element
       if (opt_returnValue !== undefined) {
         this.dialog_.returnValue = opt_returnValue;
       }
 
-      // This won't match the native <dialog> exactly because if the user set
-      // top on a centered polyfill dialog, that top gets thrown away when the
-      // dialog is closed. Not sure it's possible to polyfill this perfectly.
-      if (this.replacedStyleTop_) {
-        this.dialog_.style.top = 'auto';
-      }
-
-      if (this.modal_) {
-        this.backdrop_.removeEventListener('click', this.backdropClick_);
-        if (this.backdrop_.parentElement) {
-          this.backdrop_.parentElement.removeChild(this.backdrop_);
-        }
-        dialogPolyfill.dm.removeDialog(this);
-      }
+      this.setOpen(false);
 
       // Triggering "close" event for any attached listeners on the <dialog>.
       var closeEvent = new supportCustomEvent('close', {
@@ -372,7 +381,6 @@
     if (this.pendingDialogStack.length >= allowed) {
       return false;
     }
-
     this.pendingDialogStack.push(dpi);
     if (this.pendingDialogStack.length == 1) {
       this.blockDocument();

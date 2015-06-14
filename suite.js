@@ -135,6 +135,20 @@ void function() {
 
       assert.isTrue(dialog.open);
     });
+    test('setAttribute reflects property', function() {
+      dialog.setAttribute('open', '');
+      assert.isTrue(dialog.open, 'attribute opens dialog');
+    });
+    test('show/showModal outside document', function() {
+      dialog.open = false;
+      dialog.parentNode.removeChild(dialog);
+
+      assert.throws(dialog.showModal);
+
+      assert.doesNotThrow(dialog.show);
+      assert.isTrue(dialog.open, 'can open non-modal outside document');
+      assert.isFalse(document.body.contains(dialog));
+    });
   });
 
   suite('position', function() {
