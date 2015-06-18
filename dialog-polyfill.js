@@ -111,9 +111,12 @@
       target && target.focus();
     }
 
-    if (dialogPolyfill.needsCentering(this))
-      dialogPolyfill.reposition(this);
     if (isModal) {
+      // Dialogs are only centered vertically when in the 'top layer', aka,
+      // when shown modally.
+      if (dialogPolyfill.needsCentering(this)) {
+        dialogPolyfill.reposition(this);
+      }
       this.dialogPolyfillInfo.modal = true;
       dialogPolyfill.dm.pushDialog(this);
     }
@@ -137,6 +140,7 @@
     // closed. Not sure it's possible to polyfill this perfectly.
     if (this.dialogPolyfillInfo.isTopOverridden) {
       this.style.top = 'auto';
+      this.dialogPolyfillInfo.isTopOverridden = false;
     }
 
     if (this.dialogPolyfillInfo.modal) {
