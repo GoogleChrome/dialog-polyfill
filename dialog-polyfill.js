@@ -47,23 +47,22 @@
    */
   function dialogPolyfillInfo(dialog) {
     this.dialog_ = dialog;
-    this.previousOpen_ = false;
     this.replacedStyleTop_ = false;
+    this.openAsModal_ = false;
 
     dialog.show = this.show.bind(this);
     dialog.showModal = this.showModal.bind(this);
     dialog.close = this.close.bind(this);
 
-    this.observeOpen_ = this.observeOpen_.bind(this);
+    var callback = function() {
+      this.dialog_.hasAttribute('open') || this.maybeHideModal_();
+    }.bind(this);
     if ('MutationObserver' in window) {
-      var mo = new MutationObserver(this.observeOpen_);
+      var mo = new MutationObserver(callback);
       mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
     } else {
       // TODO: Support for IE9-10.
     }
-    dialog.addEventListener('propertychange', function(ev) {
-      console.info('prop change', ev);
-    });
 
     Object.defineProperty(dialog, 'open', {
       set: this.setOpen.bind(this),
@@ -83,35 +82,24 @@
       return this.dialog_;
     },
 
-    /**
-     * Called when a change to the 'open' attribute is observed.
-     */
-    observeOpen_: function() {
-      var value = this.dialog_.hasAttribute('open');
-      if (value === this.previousOpen_) { return; }
-      this.previousOpen_ = value;
-      if (value) {
-        if (dialogPolyfill.needsCentering(this.dialog_)) {
-          dialogPolyfill.reposition(this.dialog_);
-          this.replacedStyleTop_ = true;
-        } else {
-          this.replacedStyleTop_ = false;
-        }
-      } else {
-        // This won't match the native <dialog> exactly because if the user set
-        // top on a centered polyfill dialog, that top gets thrown away when the
-        // dialog is closed. Not sure it's possible to polyfill this perfectly.
-        if (this.replacedStyleTop_) {
-          this.dialog_.style.top = 'auto';
-        }
+    maybeHideModal_: function() {
+      if (!this.openAsModal_) { return; }
+      this.openAsModal_ = false;
 
-        // Optimistically clear the modal part of this <dialog>.
-        this.backdrop_.removeEventListener('click', this.backdropClick_);
-        if (this.backdrop_.parentElement) {
-          this.backdrop_.parentElement.removeChild(this.backdrop_);
-        }
-        dialogPolyfill.dm.removeDialog(this);
+      // This won't match the native <dialog> exactly because if the user set
+      // top on a centered polyfill dialog, that top gets thrown away when the
+      // dialog is closed. Not sure it's possible to polyfill this perfectly.
+      if (this.replacedStyleTop_) {
+        this.dialog_.style.top = 'auto';
+        this.replacedStyleTop_ = false;
       }
+
+      // Optimistically clear the modal part of this <dialog>.
+      this.backdrop_.removeEventListener('click', this.backdropClick_);
+      if (this.backdrop_.parentElement) {
+        this.backdrop_.parentElement.removeChild(this.backdrop_);
+      }
+      dialogPolyfill.dm.removeDialog(this);
     },
 
     /**
@@ -122,8 +110,8 @@
         this.dialog_.hasAttribute('open') || this.dialog_.setAttribute('open', '');
       } else {
         this.dialog_.removeAttribute('open');
+        this.maybeHideModal_();
       }
-      this.observeOpen_();
     },
 
     /**
@@ -163,10 +151,19 @@
       if (!document.body.contains(this.dialog_)) {
         throw 'Failed to execute \'showModal\' on dialog: The element is not in a Document.'
       }
+      if (!dialogPolyfill.dm.pushDialog(this)) {
+        throw 'Failed to execute \'showModal\' on dialog: There are too many open modal dialogs.'
+      }
+      this.show();
+      this.openAsModal_ = true;
 
-      this.setOpen(true);
-
-      dialogPolyfill.dm.pushDialog(this);
+      // Optionally center vertically, relative to the current viewport.
+      if (dialogPolyfill.needsCentering(this.dialog_)) {
+        dialogPolyfill.reposition(this.dialog_);
+        this.replacedStyleTop_ = true;
+      } else {
+        this.replacedStyleTop_ = false;
+      }
 
       // Insert backdrop.
       this.backdrop_.addEventListener('click', this.backdropClick_);
