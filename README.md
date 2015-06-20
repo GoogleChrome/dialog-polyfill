@@ -65,8 +65,8 @@ When using the polyfill, the backdrop will be an adjacent element:
 ## Limitations
 
 - Modal dialogs have limitations-
-  - The browser's chrome may not be accessible via the tab key
   - They should be a child of `<body>` or have parents without layout (aka, no position `absolute` or `relative` elements)
+  - The browser's chrome may not be accessible via the tab key
   - Stacking can be ruined by playing with z-index
   - Changes to the CSS top/bottom values while open aren't retained
 
