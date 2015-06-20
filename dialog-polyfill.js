@@ -19,12 +19,26 @@
    */
   function findNearestDialog(el) {
     while (el) {
-      if (el.nodeName == 'DIALOG') {
+      if (/dialog/i.test(el.nodeName)) {
         return /** @type {HTMLDialogElement} */ (el);
       }
       el = el.parentElement;
     }
     return null;
+  }
+
+  /**
+   * @param {!NodeList} nodeList to search
+   * @param {Node} node to find
+   * @return {boolean} whether node is inside nodeList
+   */
+  function inNodeList(nodeList, node) {
+    for (var i = 0; i < nodeList.length; ++i) {
+      if (nodeList[i] == node) {
+        return true;
+      }
+    }
+    return false;
   }
 
   var dialogPolyfill = {};
@@ -34,14 +48,6 @@
     var topValue = scrollTop + (window.innerHeight - element.offsetHeight) / 2;
     element.style.top = Math.max(0, topValue) + 'px';
     element.dialogPolyfillInfo.isTopOverridden = true;
-  };
-
-  dialogPolyfill.inNodeList = function(nodeList, node) {
-    for (var i = 0; i < nodeList.length; ++i) {
-      if (nodeList[i] == node)
-        return true;
-    }
-    return false;
   };
 
   dialogPolyfill.isInlinePositionSetByStylesheet = function(element) {
@@ -61,7 +67,7 @@
         try {
           selectedNodes = document.querySelectorAll(rule.selectorText);
         } catch(e) {}
-        if (!selectedNodes || !dialogPolyfill.inNodeList(selectedNodes, element))
+        if (!selectedNodes || !inNodeList(selectedNodes, element))
           continue;
         var cssTop = rule.style.getPropertyValue('top');
         var cssBottom = rule.style.getPropertyValue('bottom');
