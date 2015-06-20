@@ -165,6 +165,9 @@ void function() {
     test('default modal centering', function() {
       dialog.showModal();
       checkDialogCenter();
+      assert.ok(dialog.style.top, 'expected top to be set');
+      dialog.close();
+      assert.notOk(dialog.style.top, 'expected top to be cleared');
     });
     test('modal respects static position', function() {
       dialog.style.top = '10px';
@@ -426,6 +429,9 @@ void function() {
 
       assert.equal(window.getComputedStyle(one).zIndex, 100);
       assert.equal(window.getComputedStyle(two).zIndex, 200);
+
+      two.close();
+      assert.equal(window.getComputedStyle(two).zIndex, 200);
     });
     test('modal stacking order', function() {
       dialog.showModal();
@@ -456,6 +462,9 @@ void function() {
       assert.isBelow(zfb, zf,' backdrop below dialog');
 
       assert.isAbove(zfb, zb, 'front backdrop is above back dialog');
+
+      front.close();
+      assert.notOk(front.style.zIndex, 'modal close should clear zindex');
     });
   });
 

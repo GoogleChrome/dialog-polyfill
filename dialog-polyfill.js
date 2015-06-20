@@ -85,12 +85,13 @@
     maybeHideModal_: function() {
       if (!this.openAsModal_) { return; }
       this.openAsModal_ = false;
+      this.dialog_.style.zIndex = '';
 
       // This won't match the native <dialog> exactly because if the user set
       // top on a centered polyfill dialog, that top gets thrown away when the
       // dialog is closed. Not sure it's possible to polyfill this perfectly.
       if (this.replacedStyleTop_) {
-        this.dialog_.style.top = 'auto';
+        this.dialog_.style.top = '';
         this.replacedStyleTop_ = false;
       }
 
