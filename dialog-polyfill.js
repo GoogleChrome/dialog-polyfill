@@ -19,7 +19,7 @@
    */
   function findNearestDialog(el) {
     while (el) {
-      if (el.nodeName == 'DIALOG') {
+      if (/dialog/i.test(el.nodeName)) {
         return /** @type {HTMLDialogElement} */ (el);
       }
       el = el.parentElement;
