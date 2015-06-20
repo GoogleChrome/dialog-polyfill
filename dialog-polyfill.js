@@ -54,15 +54,13 @@
     dialog.showModal = this.showModal.bind(this);
     dialog.close = this.close.bind(this);
 
-    var callback = function() {
-      this.dialog_.hasAttribute('open') || this.maybeHideModal_();
-    }.bind(this);
     if ('MutationObserver' in window) {
-      var mo = new MutationObserver(callback);
+      var mo = new MutationObserver(this.maybeHideModal_.bind(this));
       mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
     } else {
       // TODO: Support for IE9-10.
     }
+    // TODO: Watch for removal from the DOM.
 
     Object.defineProperty(dialog, 'open', {
       set: this.setOpen.bind(this),
@@ -82,8 +80,16 @@
       return this.dialog_;
     },
 
+    /**
+     * Maybe remove this dialog from the modal top layer. This is called when
+     * a modal dialog may no longer be tenable, e.g., when the dialog is no
+     * longer open or is no longer part of the DOM.
+     */
     maybeHideModal_: function() {
       if (!this.openAsModal_) { return; }
+      if (this.dialog_.hasAttribute('open') &&
+          document.body.contains(this.dialog_)) { return; }
+
       this.openAsModal_ = false;
       this.dialog_.style.zIndex = '';
 
@@ -111,7 +117,7 @@
         this.dialog_.hasAttribute('open') || this.dialog_.setAttribute('open', '');
       } else {
         this.dialog_.removeAttribute('open');
-        this.maybeHideModal_();
+        this.maybeHideModal_();  // nb. redundant with MutationObserver
       }
     },
 
@@ -130,13 +136,19 @@
       e.stopPropagation();
     },
 
+    /**
+     * Sets the zIndex for the backdrop and dialog.
+     *
+     * @param {number} backdropZ
+     * @param {number} dialogZ
+     */
     updateZIndex: function(backdropZ, dialogZ) {
       this.backdrop_.style.zIndex = backdropZ;
       this.dialog_.style.zIndex = dialogZ;
     },
 
     /**
-     * Shows the dialog.
+     * Shows the dialog. This is idempotent and will always succeed.
      */
     show: function() {
       this.setOpen(true);
@@ -186,7 +198,8 @@
     },
 
     /**
-     * Closes this HTMLDialogElement.
+     * Closes this HTMLDialogElement. This is optional vs clearing the open
+     * attribute, however this fires a 'close' event.
      *
      * @param {*=} opt_returnValue to use as the returnValue
      */
@@ -194,13 +207,12 @@
       if (!this.dialog_.hasAttribute('open')) {
         throw 'Failed to execute \'close\' on dialog: The element does not have an \'open\' attribute, and therefore cannot be closed.'
       }
+      this.setOpen(false);
 
       // Leave returnValue untouched in case it was set directly on the element
       if (opt_returnValue !== undefined) {
         this.dialog_.returnValue = opt_returnValue;
       }
-
-      this.setOpen(false);
 
       // Triggering "close" event for any attached listeners on the <dialog>.
       var closeEvent = new supportCustomEvent('close', {
@@ -265,8 +277,7 @@
   };
 
   /**
-   * @export
-   * @param {!Element} element upgrade
+   * @param {!Element} element to upgrade
    */
   dialogPolyfill.registerDialog = function(element) {
     if (element.show) {
@@ -286,7 +297,7 @@
     // The overlay is used to simulate how a modal dialog blocks the document.
     // The blocking dialog is positioned on top of the overlay, and the rest of
     // the dialogs on the pending dialog stack are positioned below it. In the
-    // actual  implementation, the modal dialog stacking is controlled by the
+    // actual implementation, the modal dialog stacking is controlled by the
     // top layer, where z-index has no effect.
     this.overlay = document.createElement('div');
     this.overlay.className = '_dialog_overlay';
