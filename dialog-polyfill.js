@@ -70,8 +70,6 @@
     this.backdrop_ = document.createElement('div');
     this.backdrop_.className = 'backdrop';
     this.backdropClick_ = this.backdropClick_.bind(this);
-
-    this.setOpen(dialog.hasAttribute('open'));
   }
 
   dialogPolyfillInfo.prototype = {
