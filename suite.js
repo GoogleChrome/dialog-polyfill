@@ -88,21 +88,67 @@ void function() {
     dialog = createDialog('Default Dialog');
   });
 
-  test('basic', function() {
-    assert.isFalse(dialog.hasAttribute('open'));
-    dialog.show();
-    assert.isTrue(dialog.hasAttribute('open'));
-    assert.isTrue(dialog.open);
+  suite('basic', function() {
+    test('show and close', function() {
+      assert.isFalse(dialog.hasAttribute('open'));
+      dialog.show();
+      assert.isTrue(dialog.hasAttribute('open'));
+      assert.isTrue(dialog.open);
 
-    var returnValue = 1234;
-    dialog.close(returnValue);
-    assert.isFalse(dialog.hasAttribute('open'));
-    assert.equal(dialog.returnValue, returnValue);
+      var returnValue = 1234;
+      dialog.close(returnValue);
+      assert.isFalse(dialog.hasAttribute('open'));
+      assert.equal(dialog.returnValue, returnValue);
 
-    dialog.show();
-    dialog.close();
-    assert.isFalse(dialog.open);
-    assert.equal(dialog.returnValue, returnValue);
+      dialog.show();
+      dialog.close();
+      assert.isFalse(dialog.open);
+      assert.equal(dialog.returnValue, returnValue);
+    });
+    test('open property', function() {
+      assert.isFalse(dialog.hasAttribute('open'));
+      dialog.show();
+      assert.isTrue(dialog.hasAttribute('open'));
+      assert.isTrue(dialog.open);
+
+      dialog.open = false;
+      assert.isFalse(dialog.open);
+      assert.isFalse(dialog.hasAttribute('open'),
+          'open property should clear attribute');
+      assert.throws(dialog.close);
+
+      var overlay = document.querySelector('._dialog_overlay');
+      assert.isNull(overlay);
+    });
+    test('show/showModal interaction', function() {
+      assert.isFalse(dialog.hasAttribute('open'));
+      dialog.show();
+
+      assert.doesNotThrow(dialog.show);
+      assert.throws(dialog.showModal);
+
+      dialog.open = false;
+      assert.doesNotThrow(dialog.showModal);
+      assert.doesNotThrow(dialog.show);  // show after showModal does nothing
+      assert.throws(dialog.showModal);
+      // TODO: check dialog is still modal
+
+      assert.isTrue(dialog.open);
+    });
+    test('setAttribute reflects property', function() {
+      dialog.setAttribute('open', '');
+      assert.isTrue(dialog.open, 'attribute opens dialog');
+    });
+    test('show/showModal outside document', function() {
+      dialog.open = false;
+      dialog.parentNode.removeChild(dialog);
+
+      assert.throws(dialog.showModal);
+
+      assert.doesNotThrow(dialog.show);
+      assert.isTrue(dialog.open, 'can open non-modal outside document');
+      assert.isFalse(document.body.contains(dialog));
+    });
   });
 
   suite('position', function() {
@@ -119,6 +165,9 @@ void function() {
     test('default modal centering', function() {
       dialog.showModal();
       checkDialogCenter();
+      assert.ok(dialog.style.top, 'expected top to be set');
+      dialog.close();
+      assert.notOk(dialog.style.top, 'expected top to be cleared');
     });
     test('modal respects static position', function() {
       dialog.style.top = '10px';
@@ -380,6 +429,9 @@ void function() {
 
       assert.equal(window.getComputedStyle(one).zIndex, 100);
       assert.equal(window.getComputedStyle(two).zIndex, 200);
+
+      two.close();
+      assert.equal(window.getComputedStyle(two).zIndex, 200);
     });
     test('modal stacking order', function() {
       dialog.showModal();
@@ -410,6 +462,9 @@ void function() {
       assert.isBelow(zfb, zf,' backdrop below dialog');
 
       assert.isAbove(zfb, zb, 'front backdrop is above back dialog');
+
+      front.close();
+      assert.notOk(front.style.zIndex, 'modal close should clear zindex');
     });
   });
 

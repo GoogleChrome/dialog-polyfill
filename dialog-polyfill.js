@@ -41,13 +41,193 @@
     return false;
   }
 
+  /**
+   * @param {!Element} dialog to upgrade
+   * @constructor
+   */
+  function dialogPolyfillInfo(dialog) {
+    this.dialog_ = dialog;
+    this.replacedStyleTop_ = false;
+    this.openAsModal_ = false;
+
+    dialog.show = this.show.bind(this);
+    dialog.showModal = this.showModal.bind(this);
+    dialog.close = this.close.bind(this);
+
+    if ('MutationObserver' in window) {
+      var mo = new MutationObserver(this.maybeHideModal_.bind(this));
+      mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
+    } else {
+      // TODO: Support for IE9-10.
+    }
+    // TODO: Watch for removal from the DOM.
+
+    Object.defineProperty(dialog, 'open', {
+      set: this.setOpen.bind(this),
+      get: dialog.hasAttribute.bind(dialog, 'open')
+    });
+
+    this.backdrop_ = document.createElement('div');
+    this.backdrop_.className = 'backdrop';
+    this.backdropClick_ = this.backdropClick_.bind(this);
+  }
+
+  dialogPolyfillInfo.prototype = {
+
+    get dialog() {
+      return this.dialog_;
+    },
+
+    /**
+     * Maybe remove this dialog from the modal top layer. This is called when
+     * a modal dialog may no longer be tenable, e.g., when the dialog is no
+     * longer open or is no longer part of the DOM.
+     */
+    maybeHideModal_: function() {
+      if (!this.openAsModal_) { return; }
+      if (this.dialog_.hasAttribute('open') &&
+          document.body.contains(this.dialog_)) { return; }
+
+      this.openAsModal_ = false;
+      this.dialog_.style.zIndex = '';
+
+      // This won't match the native <dialog> exactly because if the user set
+      // top on a centered polyfill dialog, that top gets thrown away when the
+      // dialog is closed. Not sure it's possible to polyfill this perfectly.
+      if (this.replacedStyleTop_) {
+        this.dialog_.style.top = '';
+        this.replacedStyleTop_ = false;
+      }
+
+      // Optimistically clear the modal part of this <dialog>.
+      this.backdrop_.removeEventListener('click', this.backdropClick_);
+      if (this.backdrop_.parentElement) {
+        this.backdrop_.parentElement.removeChild(this.backdrop_);
+      }
+      dialogPolyfill.dm.removeDialog(this);
+    },
+
+    /**
+     * @param {boolean} value whether to open or close this dialog
+     */
+    setOpen: function(value) {
+      if (value) {
+        this.dialog_.hasAttribute('open') || this.dialog_.setAttribute('open', '');
+      } else {
+        this.dialog_.removeAttribute('open');
+        this.maybeHideModal_();  // nb. redundant with MutationObserver
+      }
+    },
+
+    /**
+     * Handles clicks on the fake .backdrop element, redirecting them as if
+     * they were on the dialog itself.
+     *
+     * @param {!Event} e to redirect
+     */
+    backdropClick_: function(e) {
+      var redirectedEvent = document.createEvent('MouseEvents');
+      redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
+          e.detail, e.screenX, e.screenY, e.clientX, e.clientY, e.ctrlKey,
+          e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
+      this.dialog_.dispatchEvent(redirectedEvent);
+      e.stopPropagation();
+    },
+
+    /**
+     * Sets the zIndex for the backdrop and dialog.
+     *
+     * @param {number} backdropZ
+     * @param {number} dialogZ
+     */
+    updateZIndex: function(backdropZ, dialogZ) {
+      this.backdrop_.style.zIndex = backdropZ;
+      this.dialog_.style.zIndex = dialogZ;
+    },
+
+    /**
+     * Shows the dialog. This is idempotent and will always succeed.
+     */
+    show: function() {
+      this.setOpen(true);
+    },
+
+    /**
+     * Show this dialog modally.
+     */
+    showModal: function() {
+      if (this.dialog_.hasAttribute('open')) {
+        throw 'Failed to execute \'showModal\' on dialog: The element is already open, and therefore cannot be opened modally.';
+      }
+      if (!document.body.contains(this.dialog_)) {
+        throw 'Failed to execute \'showModal\' on dialog: The element is not in a Document.'
+      }
+      if (!dialogPolyfill.dm.pushDialog(this)) {
+        throw 'Failed to execute \'showModal\' on dialog: There are too many open modal dialogs.'
+      }
+      this.show();
+      this.openAsModal_ = true;
+
+      // Optionally center vertically, relative to the current viewport.
+      if (dialogPolyfill.needsCentering(this.dialog_)) {
+        dialogPolyfill.reposition(this.dialog_);
+        this.replacedStyleTop_ = true;
+      } else {
+        this.replacedStyleTop_ = false;
+      }
+
+      // Insert backdrop.
+      this.backdrop_.addEventListener('click', this.backdropClick_);
+      this.dialog_.parentNode.insertBefore(this.backdrop_,
+          this.dialog_.nextSibling);
+
+      // Find element with `autofocus` attribute or first form control.
+      var target = this.dialog_.querySelector('[autofocus]:not([disabled])');
+      if (!target) {
+        // TODO: technically this is 'any focusable area'
+        var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
+        var query = opts.map(function(el) {
+          return el + ':not([disabled])';
+        }).join(', ');
+        target = this.dialog_.querySelector(query);
+      }
+      document.activeElement && document.activeElement.blur();
+      target && target.focus();
+    },
+
+    /**
+     * Closes this HTMLDialogElement. This is optional vs clearing the open
+     * attribute, however this fires a 'close' event.
+     *
+     * @param {*=} opt_returnValue to use as the returnValue
+     */
+    close: function(opt_returnValue) {
+      if (!this.dialog_.hasAttribute('open')) {
+        throw 'Failed to execute \'close\' on dialog: The element does not have an \'open\' attribute, and therefore cannot be closed.'
+      }
+      this.setOpen(false);
+
+      // Leave returnValue untouched in case it was set directly on the element
+      if (opt_returnValue !== undefined) {
+        this.dialog_.returnValue = opt_returnValue;
+      }
+
+      // Triggering "close" event for any attached listeners on the <dialog>.
+      var closeEvent = new supportCustomEvent('close', {
+        bubbles: true,
+        cancelable: false
+      });
+      this.dialog_.dispatchEvent(closeEvent);
+    }
+
+  };
+
   var dialogPolyfill = {};
 
   dialogPolyfill.reposition = function(element) {
     var scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
     var topValue = scrollTop + (window.innerHeight - element.offsetHeight) / 2;
     element.style.top = Math.max(0, topValue) + 'px';
-    element.dialogPolyfillInfo.isTopOverridden = true;
   };
 
   dialogPolyfill.isInlinePositionSetByStylesheet = function(element) {
@@ -94,109 +274,51 @@
     return !dialogPolyfill.isInlinePositionSetByStylesheet(dialog);
   };
 
-  dialogPolyfill.showDialog = function(isModal) {
-    if (this.open) {
-      throw 'InvalidStateError: showDialog called on open dialog';
-    }
-    this.open = true;  // TODO: should be a getter mapped to attribute
-    this.setAttribute('open', 'open');
-
-    if (isModal) {
-      // Find element with `autofocus` attribute or first form control.
-      var target = this.querySelector('[autofocus]:not([disabled])');
-      if (!target) {
-        // TODO: technically this is 'any focusable area'
-        var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
-        var query = opts.map(function(el) {
-          return el + ':not([disabled])';
-        }).join(', ');
-        target = this.querySelector(query);
-      }
-
-      document.activeElement && document.activeElement.blur();
-      target && target.focus();
-    }
-
-    if (isModal) {
-      // Dialogs are only centered vertically when in the 'top layer', aka,
-      // when shown modally.
-      if (dialogPolyfill.needsCentering(this)) {
-        dialogPolyfill.reposition(this);
-      }
-      this.dialogPolyfillInfo.modal = true;
-      dialogPolyfill.dm.pushDialog(this);
-    }
-  };
-
-  dialogPolyfill.close = function(retval) {
-    if (!this.open && !window.HTMLDialogElement) {
-      // Native implementations will set .open to false, so ignore this error.
-      throw 'InvalidStateError: close called on closed dialog';
-    }
-    this.open = false;
-    this.removeAttribute('open');
-
-    // Leave returnValue untouched in case it was set directly on the element
-    if (typeof retval != 'undefined') {
-      this.returnValue = retval;
-    }
-
-    // This won't match the native <dialog> exactly because if the user sets top
-    // on a centered polyfill dialog, that top gets thrown away when the dialog is
-    // closed. Not sure it's possible to polyfill this perfectly.
-    if (this.dialogPolyfillInfo.isTopOverridden) {
-      this.style.top = 'auto';
-      this.dialogPolyfillInfo.isTopOverridden = false;
-    }
-
-    if (this.dialogPolyfillInfo.modal) {
-      dialogPolyfill.dm.removeDialog(this);
-    }
-
-    // Triggering "close" event for any attached listeners on the <dialog>
-    var closeEvent = new supportCustomEvent('close', {
-      bubbles: true,
-      cancelable: true
-    });
-    this.dispatchEvent(closeEvent);  // TODO: handle cancelling this event
-
-    return this.returnValue;
-  };
-
+  /**
+   * @param {!Element} element to upgrade
+   */
   dialogPolyfill.registerDialog = function(element) {
     if (element.show) {
       console.warn("This browser already supports <dialog>, the polyfill " +
           "may not work correctly.");
     }
-    element.show = dialogPolyfill.showDialog.bind(element, false);
-    element.showModal = dialogPolyfill.showDialog.bind(element, true);
-    element.close = dialogPolyfill.close.bind(element);
-    element.dialogPolyfillInfo = {};
-    element.open = false;
+    new dialogPolyfillInfo(element);
   };
-
-  // The overlay is used to simulate how a modal dialog blocks the document. The
-  // blocking dialog is positioned on top of the overlay, and the rest of the
-  // dialogs on the pending dialog stack are positioned below it. In the actual
-  // implementation, the modal dialog stacking is controlled by the top layer,
-  // where z-index has no effect.
-  var TOP_LAYER_ZINDEX = 100000;
-  var MAX_PENDING_DIALOGS = 100000;
 
   /**
    * @constructor
    */
   dialogPolyfill.DialogManager = function() {
+    /** @type {!Array<!dialogPolyfillInfo>} */
     this.pendingDialogStack = [];
+
+    // The overlay is used to simulate how a modal dialog blocks the document.
+    // The blocking dialog is positioned on top of the overlay, and the rest of
+    // the dialogs on the pending dialog stack are positioned below it. In the
+    // actual implementation, the modal dialog stacking is controlled by the
+    // top layer, where z-index has no effect.
     this.overlay = document.createElement('div');
     this.overlay.className = '_dialog_overlay';
-
     this.overlay.addEventListener('click', function(e) {
       e.stopPropagation();
     });
 
     this.handleKey_ = this.handleKey_.bind(this);
     this.handleFocus_ = this.handleFocus_.bind(this);
+
+    this.zIndexLow_ = 100000;
+    this.zIndexHigh_ = 100000 + 150;
+  };
+
+  /**
+   * @return {Element} the top HTML dialog element, if any
+   */
+  dialogPolyfill.DialogManager.prototype.topDialogElement = function() {
+    if (this.pendingDialogStack.length) {
+      var t = this.pendingDialogStack[this.pendingDialogStack.length - 1];
+      return t.dialog;
+    }
+    return null;
   };
 
   /**
@@ -220,22 +342,19 @@
   };
 
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
-    var zIndex = TOP_LAYER_ZINDEX;
+    var zIndex = this.zIndexLow_;
+
     for (var i = 0; i < this.pendingDialogStack.length; i++) {
       if (i == this.pendingDialogStack.length - 1) {
         this.overlay.style.zIndex = zIndex++;
       }
-      var dialog = this.pendingDialogStack[i];
-      dialog.dialogPolyfillInfo.backdrop.style.zIndex = zIndex++;
-      dialog.style.zIndex = zIndex++;
+      this.pendingDialogStack[i].updateZIndex(zIndex++, zIndex++);
     }
   };
 
   dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
     var candidate = findNearestDialog(/** @type {Element} */ (event.target));
-    var dialog = this.pendingDialogStack[this.pendingDialogStack.length - 1];
-
-    if (candidate != dialog) {
+    if (candidate != this.topDialogElement()) {
       event.preventDefault();
       event.stopPropagation();
       event.target.blur();
@@ -253,54 +372,39 @@
         bubbles: false,
         cancelable: true
       });
-      var dialog = this.pendingDialogStack[this.pendingDialogStack.length - 1];
+      var dialog = this.topDialogElement();
       if (dialog.dispatchEvent(cancelEvent)) {
         dialog.close();
       }
     }
   };
 
-  dialogPolyfill.DialogManager.prototype.pushDialog = function(dialog) {
-    if (this.pendingDialogStack.length >= MAX_PENDING_DIALOGS) {
-      throw "Too many modal dialogs";
+  /**
+   * @param {!dialogPolyfillInfo} dpi
+   * @return {boolean} whether the dialog was allowed
+   */
+  dialogPolyfill.DialogManager.prototype.pushDialog = function(dpi) {
+    var allowed = (this.zIndexHigh_ - this.zIndexLow_) / 2 - 1;
+    if (this.pendingDialogStack.length >= allowed) {
+      return false;
     }
-
-    var backdrop = document.createElement('div');
-    backdrop.className = 'backdrop';
-    var clickEventListener = function(e) {
-      var redirectedEvent = document.createEvent('MouseEvents');
-      redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
-          e.detail, e.screenX, e.screenY, e.clientX, e.clientY, e.ctrlKey,
-          e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
-      dialog.dispatchEvent(redirectedEvent);
-      e.stopPropagation();
-    };
-    backdrop.addEventListener('click', clickEventListener);
-    dialog.parentNode.insertBefore(backdrop, dialog.nextSibling);
-    dialog.dialogPolyfillInfo.backdrop = backdrop;
-    dialog.dialogPolyfillInfo.clickEventListener = clickEventListener;
-
-    this.pendingDialogStack.push(dialog);
+    this.pendingDialogStack.push(dpi);
     if (this.pendingDialogStack.length == 1) {
       this.blockDocument();
     }
     this.updateStacking();
+    return true;
   };
 
-  dialogPolyfill.DialogManager.prototype.removeDialog = function(dialog) {
-    var index = this.pendingDialogStack.indexOf(dialog);
-    if (index == -1) {
-      return;
-    }
-    this.pendingDialogStack.splice(index, 1);
-    var backdrop = dialog.dialogPolyfillInfo.backdrop;
-    var clickEventListener = dialog.dialogPolyfillInfo.clickEventListener;
-    backdrop.removeEventListener('click', clickEventListener);
-    backdrop.parentNode.removeChild(backdrop);
-    dialog.dialogPolyfillInfo.backdrop = null;
-    dialog.dialogPolyfillInfo.clickEventListener = null;
-    this.updateStacking();
+  /**
+   * @param {dialogPolyfillInfo} dpi
+   */
+  dialogPolyfill.DialogManager.prototype.removeDialog = function(dpi) {
+    var index = this.pendingDialogStack.indexOf(dpi);
+    if (index == -1) { return; }
 
+    this.pendingDialogStack.splice(index, 1);
+    this.updateStacking();
     if (this.pendingDialogStack.length == 0) {
       this.unblockDocument();
     }

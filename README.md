@@ -25,7 +25,12 @@ This polyfill works on modern versions of all major browsers. It also supports I
   <link rel="stylesheet" type="text/css" href="dialog-polyfill.css" />
 </head>
 <body>
-  <dialog>I'm a dialog!</dialog>
+  <dialog>
+    I'm a dialog!
+    <form method="dialog">
+      <input type="submit" value="Close" />
+    </form>
+  </dialog>
   <script>
     var dialog = document.querySelector('dialog');
     dialogPolyfill.registerDialog(dialog);
@@ -59,11 +64,11 @@ When using the polyfill, the backdrop will be an adjacent element:
 
 ## Limitations
 
-- Modality isn't bulletproof. For example, `accessKey` can be used to focus inert elements.
-  - While focus is inside a `<dialog>`, the browser's chrome cannot be tabbed to.
-- The polyfill `<dialog>` should always be a child of `<body>`.
-- Polyfill top layer stacking can be ruined by playing with z-index.
-- The polyfill `<dialog>` does not retain dynamically set CSS top/bottom values
-upon close.
-- Anchored positioning is not implemented. The native `<dialog>` in Chrome
-doesn't have it either.
+- Modal dialogs have limitations-
+  - They should be a child of `<body>` or have parents without layout (aka, no position `absolute` or `relative` elements)
+  - DOM changes may not correctly clear the top layer, such as when the `<dialog>` is removed from the page
+  - The browser's chrome may not be accessible via the tab key
+  - Stacking can be ruined by playing with z-index
+  - Changes to the CSS top/bottom values while open aren't retained
+
+- Anchored positioning is not implemented, but the native `<dialog>` in Chrome doesn't have it either
