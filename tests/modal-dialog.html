@@ -38,7 +38,7 @@ function writeToConsole(s) {
 }
 
 var dialog = document.querySelector('dialog');
-dialogPolyfill.registerDialog(dialog);
+DialogPolyfill().registerDialog(dialog);
 dialog.showModal();
 
 var dialogButton = document.getElementById('dialog-button');

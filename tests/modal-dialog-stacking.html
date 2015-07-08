@@ -73,11 +73,11 @@ green.
 <dialog id="bottom"></dialog>
 <script>
 var topDialog = document.getElementById('top');
-dialogPolyfill.registerDialog(topDialog);
+DialogPolyfill().registerDialog(topDialog);
 var middleDialog = document.getElementById('middle');
-dialogPolyfill.registerDialog(middleDialog);
+DialogPolyfill().registerDialog(middleDialog);
 var bottomDialog = document.getElementById('bottom');
-dialogPolyfill.registerDialog(bottomDialog);
+DialogPolyfill().registerDialog(bottomDialog);
 
 topDialog.showModal();
 bottomDialog.showModal();

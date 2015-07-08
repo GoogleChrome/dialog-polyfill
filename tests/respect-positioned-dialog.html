@@ -42,7 +42,7 @@ function writeToConsole(s) {
 
 var dialogs = document.querySelectorAll('dialog');
 for (var i = 0; i < dialogs.length; ++i)
-  dialogPolyfill.registerDialog(dialogs[i]);
+  DialogPolyfill().registerDialog(dialogs[i]);
 
 var leftDialog = document.getElementById('left');
 leftDialog.show();
