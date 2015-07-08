@@ -135,7 +135,7 @@ body {
 <div id="post-container"></div>
 <script>
 var dialog = document.getElementById('dialog');
-dialogPolyfill.registerDialog(dialog);
+DialogPolyfill().registerDialog(dialog);
 
 function createPostButton(container, text) {
    var link = document.createElement('a');

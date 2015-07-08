@@ -79,7 +79,7 @@ void function() {
     var dialog = document.createElement('dialog');
     dialog.innerHTML = opt_content || 'Dialog #' + (cleanup.length);
     document.body.appendChild(dialog);
-    dialogPolyfill.registerDialog(dialog);
+    DialogPolyfill().registerDialog(dialog);
     return cleanup(dialog);
   }
 
