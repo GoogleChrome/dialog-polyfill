@@ -227,7 +227,7 @@
   dialogPolyfill.reposition = function(element) {
     var scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
     var topValue = scrollTop + (window.innerHeight - element.offsetHeight) / 2;
-    element.style.top = Math.max(0, topValue) + 'px';
+    element.style.top = Math.max(scrollTop, topValue) + 'px';
   };
 
   dialogPolyfill.isInlinePositionSetByStylesheet = function(element) {
