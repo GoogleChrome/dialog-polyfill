@@ -149,6 +149,29 @@ void function() {
       assert.isTrue(dialog.open, 'can open non-modal outside document');
       assert.isFalse(document.body.contains(dialog));
     });
+    test('DOM removal', function(done) {
+      dialog.showModal();
+      assert.isTrue(dialog.open);
+
+      assert.isNotNull(document.querySelector('.backdrop'));
+
+      var parentNode = dialog.parentNode;
+      parentNode.removeChild(dialog);
+
+      // DOMNodeRemoved happens at the end of the frame: this test must be
+      // async to complete successfully.
+      window.setTimeout(function() {
+        assert.isNull(document.querySelector('.backdrop'), 'dialog removal should clear modal');
+
+        assert.isTrue(dialog.open, 'removed dialog should still be open');
+        parentNode.appendChild(dialog);
+
+        assert.isTrue(dialog.open, 'removed dialog should still be open');
+        assert.isNull(document.querySelector('.backdrop'), 're-add dialog should not be modal');
+
+        done();
+      }, 0);
+    });
   });
 
   suite('position', function() {
