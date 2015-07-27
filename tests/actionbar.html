@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8" />
+<head>
+  <script src="../dialog-polyfill.js"></script>
+  <link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
+  <style>
+
+  /** TODO: support Safari through -webkit-... flexbox prefixes */
+
+  dialog.actionbar {
+    position: fixed;
+    border: 0;
+    box-sizing: border-box;
+    width: 100%;
+    bottom: 0;
+    background: #fff;
+    -webkit-transform: translate(0, 100%);
+    transform: translate(0, 100%);
+    transition: all 0.25s ease-in-out; /* NB: is 'all' for Safari, should be 'transform' */
+    margin: 0;
+    padding: 0;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
+  }
+  dialog.actionbar.appear {
+    -webkit-transform: translate(0);
+    transform: translate(0);
+  }
+
+  dialog.actionbar .holder {
+    display: flex;
+    justify-content: space-around;
+    flex-flow: wrap;
+  }
+  dialog.actionbar .holder button {
+    flex-grow: 1;
+    min-width: 200px;
+    margin: 8px;
+    border: 0;
+    font-family: Roboto, Arial, Sans-Serif;
+    font-size: 23px;
+    line-height: 33px;
+    font-weight: 400;
+    color: #666;
+    border-radius: 2px;
+    background: #ccc;
+    display: block;
+    box-sizing: border-box;
+    border: 2px solid transparent;
+  }
+  dialog.actionbar .holder button:focus {
+    outline: 0;
+    border-color: rgba(0, 0, 0, 0.125);
+  }
+  dialog.actionbar .holder button.cancel {
+    background: #fcc;
+  }
+
+  dialog.actionbar::backdrop {
+    background: rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+  }
+  dialog.actionbar + .backdrop {
+    background: rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+  }
+  dialog.actionbar.appear::backdrop {
+    opacity: 1;
+  }
+  dialog.actionbar.appear + .backdrop {
+    opacity: 1;
+  }
+
+  </style>
+</head>
+<body>
+
+<p>Builds an action bar from a modal dialog.</p>
+
+<button id="show">Show</button>
+
+<script>
+
+var ActionBar = function() {
+  this.options_ = [];
+  this.cancelButton_ = true;
+  this.dialog_ = null;
+};
+
+ActionBar.prototype.enableCancelButton = function(value) {
+  this.cancelButton_ = vaue;
+};
+
+ActionBar.prototype.addOption = function(name, opt_callback) {
+  this.options_.push({name: name, callback: opt_callback || null});
+};
+
+ActionBar.prototype.show = function(opt_callback) {
+  if (this.dialog_ != null) {
+    throw "Can't show ActionBar, already visible";
+  }
+
+  var dialog = document.createElement('dialog');
+  if (!('showModal' in dialog)) {
+    dialogPolyfill.registerDialog(dialog);
+  }
+  dialog.className = 'actionbar';
+
+  var holder = document.createElement('div');
+  holder.className = 'holder';
+  dialog.appendChild(holder);
+
+  dialog.addEventListener('click', function(ev) {
+    if (ev.target == dialog) {
+      dialog.close();
+    }
+  });
+
+  dialog.addEventListener('close', function() {
+    opt_callback && opt_callback(dialog.returnValue);
+
+    var cloneDialog = dialog.cloneNode(true);
+    if (!('showModal' in cloneDialog)) {
+      dialogPolyfill.registerDialog(cloneDialog);
+    }
+
+    document.body.appendChild(cloneDialog);
+    cloneDialog.showModal();
+    cloneDialog.classList.remove('appear');
+    window.setTimeout(function() {
+      cloneDialog.close();  // TODO: needed until DOM removal is safe
+      cloneDialog.parentNode.removeChild(cloneDialog);
+    }, 250);
+
+    if (dialog.parentNode) {
+      dialog.parentNode.removeChild(dialog);
+    }
+    if (this.dialog_ == dialog) {
+      this.dialog_ = null;
+    }
+  }.bind(this));
+
+  this.options_.forEach(function(option) {
+    var button = document.createElement('button');
+    button.textContent = option.name;
+    button.addEventListener('click', function() {
+      if (option.callback) {
+        window.setTimeout(option.callback, 0);
+      }
+      dialog.close(option.name);
+    });
+    holder.appendChild(button);
+  });
+
+  if (this.cancelButton_) {
+    var cancelButton = document.createElement('button');
+    cancelButton.className = 'cancel';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', function() {
+      dialog.close();
+    });
+    holder.appendChild(cancelButton);
+  }
+
+  document.body.appendChild(dialog);
+  dialog.showModal();
+  dialog.classList.add('appear');
+
+  this.dialog_ = dialog;
+};
+
+////// DEMO
+
+show.addEventListener('click', function() {
+  var ab = new ActionBar();
+  ab.addOption('Display');
+  ab.addOption('Options');
+  ab.addOption('Longer Choice');
+  ab.addOption('Alert', function() {
+    alert('you hit Alert');
+  });
+  ab.show(function(choice) {
+    console.info('choice was', choice);
+  });
+});
+
+</script>
+</body>
+</html>
