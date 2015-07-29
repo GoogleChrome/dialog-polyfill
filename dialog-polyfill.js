@@ -55,12 +55,13 @@
     dialog.close = this.close.bind(this);
 
     if ('MutationObserver' in window) {
-      var mo = new MutationObserver(this.maybeHideModal_.bind(this));
+      var mo = new MutationObserver(this.maybeHideModal.bind(this));
       mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
     } else {
       // TODO: Support for IE9-10.
     }
-    // TODO: Watch for removal from the DOM.
+    // Note that the DOM is observed inside DialogManager while any dialog
+    // is being displayed as a modal, to catch modal removal from the DOM.
 
     Object.defineProperty(dialog, 'open', {
       set: this.setOpen.bind(this),
@@ -83,7 +84,7 @@
      * a modal dialog may no longer be tenable, e.g., when the dialog is no
      * longer open or is no longer part of the DOM.
      */
-    maybeHideModal_: function() {
+    maybeHideModal: function() {
       if (!this.openAsModal_) { return; }
       if (this.dialog_.hasAttribute('open') &&
           document.body.contains(this.dialog_)) { return; }
@@ -115,7 +116,7 @@
         this.dialog_.hasAttribute('open') || this.dialog_.setAttribute('open', '');
       } else {
         this.dialog_.removeAttribute('open');
-        this.maybeHideModal_();  // nb. redundant with MutationObserver
+        this.maybeHideModal();  // nb. redundant with MutationObserver
       }
     },
 
@@ -305,6 +306,7 @@
 
     this.handleKey_ = this.handleKey_.bind(this);
     this.handleFocus_ = this.handleFocus_.bind(this);
+    this.handleRemove_ = this.handleRemove_.bind(this);
 
     this.zIndexLow_ = 100000;
     this.zIndexHigh_ = 100000 + 150;
@@ -329,6 +331,7 @@
     document.body.appendChild(this.overlay);
     document.body.addEventListener('focus', this.handleFocus_, true);
     document.addEventListener('keydown', this.handleKey_);
+    document.addEventListener('DOMNodeRemoved', this.handleRemove_);
   };
 
   /**
@@ -339,6 +342,7 @@
     document.body.removeChild(this.overlay);
     document.body.removeEventListener('focus', this.handleFocus_, true);
     document.removeEventListener('keydown', this.handleKey_);
+    document.removeEventListener('DOMNodeRemoved', this.handleRemove_);
   };
 
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
@@ -377,6 +381,23 @@
         dialog.close();
       }
     }
+  };
+
+  dialogPolyfill.DialogManager.prototype.handleRemove_ = function(event) {
+    if (!/dialog/i.test(event.target.nodeName)) { return; }
+
+    var dialog = /** @type {HTMLDialogElement} */ (event.target);
+    if (!dialog.open) { return; }
+
+    // Find a dialogPolyfillInfo which matches the removed <dialog>.
+    this.pendingDialogStack.some(function(dpi) {
+      if (dpi.dialog == dialog) {
+        // This call will clear the dialogPolyfillInfo on this DialogManager
+        // as a side effect.
+        dpi.maybeHideModal();
+        return true;
+      }
+    });
   };
 
   /**
