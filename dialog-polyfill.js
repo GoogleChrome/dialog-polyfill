@@ -42,7 +42,7 @@
   }
 
   /**
-   * @param {!Element} dialog to upgrade
+   * @param {!HTMLDialogElement} dialog to upgrade
    * @constructor
    */
   function dialogPolyfillInfo(dialog) {
@@ -200,7 +200,7 @@
      * Closes this HTMLDialogElement. This is optional vs clearing the open
      * attribute, however this fires a 'close' event.
      *
-     * @param {*=} opt_returnValue to use as the returnValue
+     * @param {string=} opt_returnValue to use as the returnValue
      */
     close: function(opt_returnValue) {
       if (!this.dialog_.hasAttribute('open')) {
@@ -276,14 +276,28 @@
   };
 
   /**
+   * @param {!Element} element to force upgrade
+   */
+  dialogPolyfill.forceRegisterDialog = function(element) {
+    if (element.showModal) {
+      console.warn('This browser already supports <dialog>, the polyfill ' +
+          'may not work correctly', element);
+    }
+    if (element.nodeName != 'DIALOG') {
+      throw 'Failed to register dialog: The element is not a dialog.';
+    }
+    new dialogPolyfillInfo(/** @type {!HTMLDialogElement} */ (element));
+  };
+
+  /**
    * @param {!Element} element to upgrade
    */
   dialogPolyfill.registerDialog = function(element) {
-    if (element.show) {
-      console.warn("This browser already supports <dialog>, the polyfill " +
-          "may not work correctly.");
+    if (element.showModal) {
+      console.warn('Can\'t upgrade <dialog>: already supported', element);
+    } else {
+      dialogPolyfill.forceRegisterDialog(element);
     }
-    new dialogPolyfillInfo(element);
   };
 
   /**
@@ -459,5 +473,6 @@
   }, true);
 
   window['dialogPolyfill'] = dialogPolyfill;
+  dialogPolyfill['forceRegisterDialog'] = dialogPolyfill.forceRegisterDialog;
   dialogPolyfill['registerDialog'] = dialogPolyfill.registerDialog;
 })();
