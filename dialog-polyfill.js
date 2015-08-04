@@ -215,7 +215,7 @@
 
       // Triggering "close" event for any attached listeners on the <dialog>.
       var closeEvent = new supportCustomEvent('close', {
-        bubbles: true,
+        bubbles: false,
         cancelable: false
       });
       this.dialog_.dispatchEvent(closeEvent);
