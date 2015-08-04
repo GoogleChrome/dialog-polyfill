@@ -27,8 +27,8 @@ void function() {
     var expectedTop = (window.innerHeight - d.offsetHeight) / 2;
     var expectedLeft = (window.innerWidth - d.offsetWidth) / 2;
     var rect = d.getBoundingClientRect();
-    assert.closeTo(rect.top, expectedTop, 1);
-    assert.closeTo(rect.left, expectedLeft, 1);
+    assert.closeTo(rect.top, expectedTop, 1, 'top should be nearby');
+    assert.closeTo(rect.left, expectedLeft, 1, 'left should be nearby');
   }
 
   /**
@@ -423,7 +423,12 @@ void function() {
       var value = 'ExpectedValue' + Math.random();
 
       var form = document.createElement('form');
-      form.method = 'dialog';
+      try {
+        form.method = 'dialog';
+      } catch (e) {
+        // Setting the method directly throws an exception in <=IE9.
+        form.setAttribute('method', 'dialog');
+      }
       dialog.appendChild(form);
 
       var input = document.createElement('input');
