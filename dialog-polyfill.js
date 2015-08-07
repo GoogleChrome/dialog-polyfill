@@ -458,6 +458,10 @@
     dialog.close(returnValue);
   }, true);
 
-  window['dialogPolyfill'] = dialogPolyfill;
-  dialogPolyfill['registerDialog'] = dialogPolyfill.registerDialog;
+  window['DialogPolyfill'] = function() {
+    return dialogPolyfill;
+  };
+
+  return dialogPolyfill;
+
 })();

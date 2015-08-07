@@ -54,7 +54,7 @@ function checkCentered(dialog) {
 }
 
 var dialog = document.querySelector('dialog');
-dialogPolyfill.registerDialog(dialog);
+DialogPolyfill().registerDialog(dialog);
 dialog.show();
 dialog.close();
 window.scrollTo(0, 500);
