@@ -79,7 +79,11 @@ void function() {
     var dialog = document.createElement('dialog');
     dialog.innerHTML = opt_content || 'Dialog #' + (cleanup.length);
     document.body.appendChild(dialog);
-    dialogPolyfill.registerDialog(dialog);
+    if (window.location.search == '?force') {
+      dialogPolyfill.forceRegisterDialog(dialog);
+    } else {
+      dialogPolyfill.registerDialog(dialog);
+    }
     return cleanup(dialog);
   }
 
@@ -124,13 +128,18 @@ void function() {
       assert.isFalse(dialog.hasAttribute('open'));
       dialog.show();
 
-      assert.doesNotThrow(dialog.show);
-      assert.throws(dialog.showModal);
+      // If the native dialog is being tested, show/showModal are not already
+      // bound, so wrap them in helper methods for throws/doesNotThrow.
+      var show = function() { dialog.show(); };
+      var showModal = function() { dialog.showModal(); };
+
+      assert.doesNotThrow(show);
+      assert.throws(showModal);
 
       dialog.open = false;
-      assert.doesNotThrow(dialog.showModal);
-      assert.doesNotThrow(dialog.show);  // show after showModal does nothing
-      assert.throws(dialog.showModal);
+      assert.doesNotThrow(showModal);
+      assert.doesNotThrow(show);  // show after showModal does nothing
+      assert.throws(showModal);
       // TODO: check dialog is still modal
 
       assert.isTrue(dialog.open);
@@ -143,9 +152,9 @@ void function() {
       dialog.open = false;
       dialog.parentNode.removeChild(dialog);
 
-      assert.throws(dialog.showModal);
+      assert.throws(function() { dialog.showModal(); });
 
-      assert.doesNotThrow(dialog.show);
+      assert.doesNotThrow(function() { dialog.show(); });
       assert.isTrue(dialog.open, 'can open non-modal outside document');
       assert.isFalse(document.body.contains(dialog));
     });
