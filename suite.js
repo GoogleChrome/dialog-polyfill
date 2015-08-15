@@ -419,7 +419,7 @@ void function() {
   });
 
   suite('form', function() {
-    test('dialog method', function() {
+    test('dialog method input', function() {
       var value = 'ExpectedValue' + Math.random();
 
       var form = document.createElement('form');
@@ -442,6 +442,35 @@ void function() {
 
       assert.isFalse(dialog.open);
       assert.equal(dialog.returnValue, value);
+    });
+    test('dialog method button', function() {
+      var value = 'ExpectedValue' + Math.random();
+
+      var form = document.createElement('form');
+      form.setAttribute('method', 'dialog');
+      dialog.appendChild(form);
+
+      var button = document.createElement('button');
+      button.value = value;
+      form.appendChild(button);
+
+      dialog.showModal();
+      button.focus();  // emulate user focus action
+      button.click();
+
+      assert.isFalse(dialog.open);
+      assert.equal(dialog.returnValue, value);
+
+      // Clear button value, confirm textContent is not used as value.
+      button.value = '';
+      button.removeAttribute('value');
+      button.textContent = value;
+      dialog.show();
+      button.focus();  // emulate user focus action
+      button.click();
+
+      assert.equal(dialog.returnValue, button.value,
+          'don\'t take button textContent as value');
     });
   });
 
