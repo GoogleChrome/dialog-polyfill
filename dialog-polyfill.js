@@ -19,7 +19,7 @@
    */
   function findNearestDialog(el) {
     while (el) {
-      if (/dialog/i.test(el.nodeName)) {
+      if (el.nodeName == 'DIALOG') {
         return /** @type {HTMLDialogElement} */ (el);
       }
       el = el.parentElement;
@@ -53,6 +53,10 @@
     dialog.show = this.show.bind(this);
     dialog.showModal = this.showModal.bind(this);
     dialog.close = this.close.bind(this);
+
+    if (!('returnValue' in dialog)) {
+      dialog.returnValue = '';
+    }
 
     if ('MutationObserver' in window) {
       var mo = new MutationObserver(this.maybeHideModal.bind(this));
@@ -398,7 +402,7 @@
   };
 
   dialogPolyfill.DialogManager.prototype.handleRemove_ = function(event) {
-    if (!/dialog/i.test(event.target.nodeName)) { return; }
+    if (event.target.nodeName != 'DIALOG') { return; }
 
     var dialog = /** @type {HTMLDialogElement} */ (event.target);
     if (!dialog.open) { return; }
@@ -459,12 +463,13 @@
     var dialog = findNearestDialog(/** @type {Element} */ (ev.target));
     if (!dialog) { return; }
 
-    // FIXME: The original event doesn't contain the INPUT element used to
-    // submit the form (if any). Look in some possible places.
+    // FIXME: The original event doesn't contain the element used to submit the
+    // form (if any). Look in some possible places.
     var returnValue;
     var cands = [document.activeElement, ev.explicitOriginalTarget];
+    var els = ['BUTTON', 'INPUT'];
     cands.some(function(cand) {
-      if (cand && cand.nodeName == 'INPUT' && cand.form == ev.target) {
+      if (cand && cand.form == ev.target && els.indexOf(cand.nodeName) != -1) {
         returnValue = cand.value;
         return true;
       }
