@@ -58,11 +58,13 @@
       dialog.returnValue = '';
     }
 
+    this.maybeHideModal = this.maybeHideModal.bind(this);
     if ('MutationObserver' in window) {
-      var mo = new MutationObserver(this.maybeHideModal.bind(this));
+      // IE11+, most other browsers.
+      var mo = new MutationObserver(this.maybeHideModal);
       mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
     } else {
-      // TODO: Support for IE9-10.
+      dialog.addEventListener('DOMAttrModified', this.maybeHideModal);
     }
     // Note that the DOM is observed inside DialogManager while any dialog
     // is being displayed as a modal, to catch modal removal from the DOM.
