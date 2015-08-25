@@ -19,7 +19,7 @@
    */
   function findNearestDialog(el) {
     while (el) {
-      if (el.nodeName == 'DIALOG') {
+      if (el.nodeName.toUpperCase() == 'DIALOG') {
         return /** @type {HTMLDialogElement} */ (el);
       }
       el = el.parentElement;
@@ -287,7 +287,7 @@
       console.warn('This browser already supports <dialog>, the polyfill ' +
           'may not work correctly', element);
     }
-    if (element.nodeName != 'DIALOG') {
+    if (element.nodeName.toUpperCase() != 'DIALOG') {
       throw 'Failed to register dialog: The element is not a dialog.';
     }
     new dialogPolyfillInfo(/** @type {!HTMLDialogElement} */ (element));
@@ -402,7 +402,7 @@
   };
 
   dialogPolyfill.DialogManager.prototype.handleRemove_ = function(event) {
-    if (event.target.nodeName != 'DIALOG') { return; }
+    if (event.target.nodeName.toUpperCase() != 'DIALOG') { return; }
 
     var dialog = /** @type {HTMLDialogElement} */ (event.target);
     if (!dialog.open) { return; }
@@ -469,7 +469,7 @@
     var cands = [document.activeElement, ev.explicitOriginalTarget];
     var els = ['BUTTON', 'INPUT'];
     cands.some(function(cand) {
-      if (cand && cand.form == ev.target && els.indexOf(cand.nodeName) != -1) {
+      if (cand && cand.form == ev.target && els.indexOf(cand.nodeName.toUpperCase()) != -1) {
         returnValue = cand.value;
         return true;
       }
