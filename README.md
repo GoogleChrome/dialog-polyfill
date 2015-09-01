@@ -9,8 +9,9 @@ and the
 
 ### Installation
 
-You may optionally install via Bower-
+You may optionally install via NPM or Bower-
 
+    $ npm install dialog-polyfill
     $ bower install dialog-polyfill
 
 ### Supports
