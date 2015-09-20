@@ -458,8 +458,9 @@
    * and possibly sets its return value.
    */
   document.addEventListener('submit', function(ev) {
-    var method = ev.target.getAttribute('method').toLowerCase();
-    if (method != 'dialog') { return; }
+    var formMethod = ev.target.getAttribute('method');
+    var method = formMethod && formMethod.toLowerCase();
+    if (method !== 'dialog') { return; }
     ev.preventDefault();
 
     var dialog = findNearestDialog(/** @type {Element} */ (ev.target));
