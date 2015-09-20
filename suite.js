@@ -481,6 +481,24 @@ void function() {
       assert.equal(dialog.returnValue, button.value,
           'don\'t take button textContent as value');
     });
+    test('boring form inside dialog', function() {
+      var form = document.createElement('form');
+      dialog.appendChild(form);  // don't specify method
+      form.addEventListener('submit', function(ev) {
+        ev.preventDefault();
+      });
+
+      var button = document.createElement('button');
+      button.value = 'Moot';
+      form.appendChild(button);
+
+      dialog.showModal();
+      button.focus();  // emulate user focus action
+      button.click();
+
+      assert.isTrue(dialog.open, 'non-dialog form should not close dialog')
+      assert(!dialog.returnValue);
+    });
   });
 
   suite('order', function() {
