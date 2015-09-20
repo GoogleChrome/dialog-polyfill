@@ -453,8 +453,6 @@ void function() {
       assert.equal(dialog.returnValue, value);
     });
     test('dialog input submit with missing form method attribute', function testMissingFormMethod() {
-      var value = 'ExpectedValue' + Math.random();
-
       var form = document.createElement('form');
       form.action = "javascript:void(0);";
       form.onSubmit = function(){ return false; };
@@ -462,15 +460,13 @@ void function() {
 
       var input = document.createElement('input');
       input.type = 'submit';
-      input.value = value;
       form.appendChild(input);
 
       dialog.show();
       input.focus();  // emulate user focus action
       input.click();
 
-      assert.isFalse(dialog.open, "dialog.open should be false");
-      assert.equal(dialog.returnValue, value, "dialog.returnValue should equal " + value);
+      assert.isTrue(dialog.open, "dialog.open should be true");
     });
     test('dialog method button', function() {
       var value = 'ExpectedValue' + Math.random();
