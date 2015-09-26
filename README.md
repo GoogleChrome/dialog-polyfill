@@ -20,6 +20,8 @@ This polyfill works on modern versions of all major browsers. It also supports I
 
 ## Example
 
+[JSFiddle](http://jsfiddle.net/494cy9pd/)
+
 ```html
 <head>
   <script src="dialog-polyfill.js"></script>
