@@ -198,7 +198,7 @@
         }).join(', ');
         target = this.dialog_.querySelector(query);
       }
-      document.activeElement && document.activeElement.blur();
+      document.activeElement && document.activeElement.blur && document.activeElement.blur();
       target && target.focus();
     },
 
