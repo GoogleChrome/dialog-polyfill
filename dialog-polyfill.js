@@ -483,4 +483,12 @@
   window['dialogPolyfill'] = dialogPolyfill;
   dialogPolyfill['forceRegisterDialog'] = dialogPolyfill.forceRegisterDialog;
   dialogPolyfill['registerDialog'] = dialogPolyfill.registerDialog;
+
+  if ( typeof module === 'object' && typeof module.exports === 'object' ) {
+    // CommonJS support
+    module.exports = dialogPolyfill;
+  } else if (typeof define === 'function' && define.amd) {
+    // AMD support
+    define(function () { return dialogPolyfill; });
+  }
 })();
