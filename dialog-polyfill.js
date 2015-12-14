@@ -198,7 +198,9 @@
         }).join(', ');
         target = this.dialog_.querySelector(query);
       }
-      document.activeElement && document.activeElement.blur && document.activeElement.blur();
+      if (document.activeElement && document.activeElement.blur && document.activeElement.nodeName.toLowerCase() !== "body") {
+          document.activeElement.blur();
+      }
       target && target.focus();
     },
 
@@ -381,7 +383,9 @@
     if (candidate != this.topDialogElement()) {
       event.preventDefault();
       event.stopPropagation();
-      event.target.blur();
+      if (event.target.nodeName.toLowerCase() !== "body") {
+          event.target.blur();
+      }
       // TODO: Focus on the browser chrome (aka document) or the dialog itself
       // depending on the tab direction.
       return false;
