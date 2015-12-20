@@ -18,6 +18,13 @@ You may optionally install via NPM or Bower-
 
 This polyfill works on modern versions of all major browsers. It also supports IE9 and above.
 
+## Usage
+
+1. Include the JavaScript followed by the CSS in the `<head>` of your document.
+2. Create your dialog elements within the document. See [limitations](#limitations) for more details.
+3. Register the elements using `dialogPolyfill.registerDialog()` passing it one node at a time.
+4. Begin using the dialog.
+
 ## Example
 
 ```html
