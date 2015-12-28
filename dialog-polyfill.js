@@ -153,14 +153,21 @@
     },
 
     /**
-     * Shows the dialog. This is idempotent and will always succeed.
+     * Shows the dialog. This is idempotent and will always succeed. Also triggers an open event.
      */
     show: function() {
       this.setOpen(true);
+      
+       // Triggering "open" event for any attached listeners on the <dialog>.
+      var openEvent = new supportCustomEvent('open', {
+        bubbles: false,
+        cancelable: false
+      });
+      this.dialog_.dispatchEvent(openEvent);
     },
 
     /**
-     * Show this dialog modally.
+     * Show this dialog modally. Also triggers an open event.
      */
     showModal: function() {
       if (this.dialog_.hasAttribute('open')) {
@@ -200,6 +207,13 @@
       }
       document.activeElement && document.activeElement.blur && document.activeElement.blur();
       target && target.focus();
+      
+      // Triggering "open" event for any attached listeners on the <dialog>.
+      var openEvent = new supportCustomEvent('open', {
+        bubbles: false,
+        cancelable: false
+      });
+      this.dialog_.dispatchEvent(openEvent);
     },
 
     /**
