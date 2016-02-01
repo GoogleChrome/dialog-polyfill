@@ -7,8 +7,6 @@
   <link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
   <style>
 
-  /** TODO: support Safari through -webkit-... flexbox prefixes */
-
   dialog.actionbar {
     position: fixed;
     border: 0;
@@ -16,15 +14,13 @@
     width: 100%;
     bottom: 0;
     background: #fff;
-    -webkit-transform: translate(0, 100%);
     transform: translate(0, 100%);
-    transition: all 0.25s ease-in-out; /* NB: is 'all' for Safari, should be 'transform' */
+    transition: transform 0.25s ease-in-out;
     margin: 0;
     padding: 0;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
   }
   dialog.actionbar.appear {
-    -webkit-transform: translate(0);
     transform: translate(0);
   }
 
