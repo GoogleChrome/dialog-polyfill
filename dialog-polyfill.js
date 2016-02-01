@@ -28,6 +28,19 @@
   }
 
   /**
+   * Blur the specified element, as long as it's not the HTML body element.
+   * This works around an IE9/10 bug - blurring the body causes Windows to
+   * blur the whole application.
+   *
+   * @param {Element} el to blur
+   */
+  function safeBlur(el) {
+    if (el && el.blur && el != document.body) {
+      el.blur();
+    }
+  }
+
+  /**
    * @param {!NodeList} nodeList to search
    * @param {Node} node to find
    * @return {boolean} whether node is inside nodeList
@@ -198,9 +211,7 @@
         }).join(', ');
         target = this.dialog_.querySelector(query);
       }
-      if (document.activeElement && document.activeElement.blur && document.activeElement.nodeName.toLowerCase() !== "body") {
-          document.activeElement.blur();
-      }
+      safeBlur(document.activeElement);
       target && target.focus();
     },
 
@@ -383,9 +394,7 @@
     if (candidate != this.topDialogElement()) {
       event.preventDefault();
       event.stopPropagation();
-      if (event.target.nodeName.toLowerCase() !== "body") {
-          event.target.blur();
-      }
+      safeBlur(/** @type {Element} */ (event.target));
       // TODO: Focus on the browser chrome (aka document) or the dialog itself
       // depending on the tab direction.
       return false;
