@@ -60,18 +60,16 @@
 
     this.maybeHideModal = this.maybeHideModal.bind(this);
     this.maybeSetADefaultRoleValue = this.maybeSetADefaultRoleValue.bind(this);
+    this.callMaybies = this.callMaybies.bind(this);
 
     if ('MutationObserver' in window) {
       // IE11+, most other browsers.
-      var mo = new MutationObserver(this.maybeHideModal);
-      mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
+      var mo = new MutationObserver(this.callMaybies);
+      mo.observe(dialog, { attributes: true, attributeFilter: ['open', 'role'] });
 
-      var mo2 = new MutationObserver(this.maybeSetADefaultRoleValue);
-      mo2.observe(dialog, { attributes: true, attributeFilter: ['role'] });
 
     } else {
-      dialog.addEventListener('DOMAttrModified', this.maybeHideModal);
-      dialog.addEventListener('DOMAttrModified', this.maybeSetDefaultRoleValue);
+      dialog.addEventListener('DOMAttrModified', this.callMaybies);
     }
     // Note that the DOM is observed inside DialogManager while any dialog
     // is being displayed as a modal, to catch modal removal from the DOM.
@@ -128,9 +126,18 @@
      * for its core usage in a Web application.
      */
     maybeSetADefaultRoleValue: function(){
-      if ( !this.dialog.hasAttribute('role') || this.dialog.getAttribute('role') == ''  ) {
+      if ( !this.dialog.hasAttribute('role') || this.dialog.getAttribute('role') === ''  ) {
         this.dialog.setAttribute( 'role', 'dialog'  );
       }
+    },
+
+    /**
+    * Handles the simultaneous need to call series of Maybies for the dialog
+    * commonly needed to be considered in quick succession to one another.
+    */
+    callMaybies: function(){
+      this.maybeHideModal();
+      this.maybeSetADefaultRoleValue();
     },
 
     /**
