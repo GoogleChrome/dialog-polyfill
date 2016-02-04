@@ -493,7 +493,6 @@
     dialog.close(returnValue);
   }, true);
 
-  window['dialogPolyfill'] = dialogPolyfill;
   dialogPolyfill['forceRegisterDialog'] = dialogPolyfill.forceRegisterDialog;
   dialogPolyfill['registerDialog'] = dialogPolyfill.registerDialog;
 
@@ -503,5 +502,8 @@
   } else if (typeof define === 'function' && 'amd' in define) {
     // AMD support
     define(function() { return dialogPolyfill; });
+  } else {
+    // all others
+    window['dialogPolyfill'] = dialogPolyfill;
   }
 })();
