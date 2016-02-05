@@ -63,6 +63,11 @@
     this.replacedStyleTop_ = false;
     this.openAsModal_ = false;
 
+    // Set a11y role. Browsers that support dialog implicitly know this already.
+    if (!dialog.hasAttribute('role')) {
+      dialog.setAttribute('role', 'dialog');
+    }
+
     dialog.show = this.show.bind(this);
     dialog.showModal = this.showModal.bind(this);
     dialog.close = this.close.bind(this);
