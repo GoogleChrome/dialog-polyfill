@@ -181,6 +181,9 @@ void function() {
         done();
       }, 0);
     });
+    test('has a11y property', function() {
+      assert.equal(dialog.getAttribute('role'), 'dialog', 'role should be dialog');
+    });
   });
 
   suite('position', function() {
