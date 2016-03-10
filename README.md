@@ -20,7 +20,7 @@ This polyfill works on modern versions of all major browsers. It also supports I
 
 ### Steps
 
-1. Include the JavaScript, followed by the CSS in the `<head>` of your document.
+1. Include the CSS in the `<head>` of your document, and the Javascript anywhere before referencing `dialogPolyfill`.
 2. Create your dialog elements within the document. See [limitations](#limitations) for more details.
 3. Register the elements using `dialogPolyfill.registerDialog()`, passing it one node at a time. This polyfill won't replace native support.
 4. Use your `<dialog>` elements!
@@ -29,7 +29,6 @@ This polyfill works on modern versions of all major browsers. It also supports I
 
 ```html
 <head>
-  <script src="dialog-polyfill.js"></script>
   <link rel="stylesheet" type="text/css" href="dialog-polyfill.css" />
 </head>
 <body>
@@ -39,6 +38,7 @@ This polyfill works on modern versions of all major browsers. It also supports I
       <input type="submit" value="Close" />
     </form>
   </dialog>
+  <script src="dialog-polyfill.js"></script>
   <script>
     var dialog = document.querySelector('dialog');
     dialogPolyfill.registerDialog(dialog);
