@@ -175,6 +175,19 @@
      */
     show: function() {
       this.setOpen(true);
+
+      // Find element with `autofocus` attribute or first form control.
+      var target = this.dialog_.querySelector('[autofocus]:not([disabled])');
+      if (!target) {
+        // TODO: technically this is 'any focusable area'
+        var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
+        var query = opts.map(function(el) {
+          return el + ':not([disabled])';
+        }).join(', ');
+        target = this.dialog_.querySelector(query);
+      }
+      safeBlur(document.activeElement);
+      target && target.focus();
     },
 
     /**
@@ -205,19 +218,6 @@
       this.backdrop_.addEventListener('click', this.backdropClick_);
       this.dialog_.parentNode.insertBefore(this.backdrop_,
           this.dialog_.nextSibling);
-
-      // Find element with `autofocus` attribute or first form control.
-      var target = this.dialog_.querySelector('[autofocus]:not([disabled])');
-      if (!target) {
-        // TODO: technically this is 'any focusable area'
-        var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
-        var query = opts.map(function(el) {
-          return el + ':not([disabled])';
-        }).join(', ');
-        target = this.dialog_.querySelector(query);
-      }
-      safeBlur(document.activeElement);
-      target && target.focus();
     },
 
     /**
