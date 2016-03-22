@@ -160,6 +160,28 @@
     },
 
     /**
+     * Focuses on the first focusable element within the dialog. This will always blur the current
+     * focus, even if nothing within the dialog is found.
+     */
+    focus_: function() {
+      // Find element with `autofocus` attribute, or fall back to the first form/tabindex control.
+      var target = this.dialog_.querySelector('[autofocus]:not([disabled])');
+      if (!target) {
+        // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
+        // alternative involves stepping through and trying to focus everything.
+        var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
+        var query = opts.map(function(el) {
+          return el + ':not([disabled])';
+        });
+        // TODO(samthor): tabindex values that are not numeric are not focusable.
+        query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
+        target = this.dialog_.querySelector(query.join(', '));
+      }
+      safeBlur(document.activeElement);
+      target && target.focus();
+    },
+
+    /**
      * Sets the zIndex for the backdrop and dialog.
      *
      * @param {number} backdropZ
@@ -171,10 +193,13 @@
     },
 
     /**
-     * Shows the dialog. This is idempotent and will always succeed.
+     * Shows the dialog. If the dialog is already open, this does nothing.
      */
     show: function() {
-      this.setOpen(true);
+      if (!this.dialog_.open) {
+        this.setOpen(true);
+        this.focus_();
+      }
     },
 
     /**
@@ -205,19 +230,6 @@
       this.backdrop_.addEventListener('click', this.backdropClick_);
       this.dialog_.parentNode.insertBefore(this.backdrop_,
           this.dialog_.nextSibling);
-
-      // Find element with `autofocus` attribute or first form control.
-      var target = this.dialog_.querySelector('[autofocus]:not([disabled])');
-      if (!target) {
-        // TODO: technically this is 'any focusable area'
-        var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
-        var query = opts.map(function(el) {
-          return el + ':not([disabled])';
-        }).join(', ');
-        target = this.dialog_.querySelector(query);
-      }
-      safeBlur(document.activeElement);
-      target && target.focus();
     },
 
     /**

@@ -269,16 +269,6 @@ void function() {
   });
 
   suite('form focus', function() {
-    test('no focus change on non-modal', function() {
-      var input = cleanup(document.createElement('input'));
-      input.type = 'text';
-      dialog.appendChild(input);
-
-      var previous = document.activeElement;
-      dialog.show();
-      assert.equal(document.activeElement, previous);
-      dialog.close();
-    });
     test('clear focus when nothing focusable in modal', function() {
       var input = cleanup(document.createElement('input'));
       input.type = 'text';
@@ -300,6 +290,14 @@ void function() {
 
       dialog.showModal();
       assert.equal(document.activeElement, input);
+    });
+    test('default focus on non-modal', function() {
+      var div = cleanup(document.createElement('div'));
+      div.tabIndex = 4;
+      dialog.appendChild(div);
+
+      dialog.show();
+      assert.equal(document.activeElement, div);
     });
     test('autofocus element chosen', function() {
       var input = cleanup(document.createElement('input'));
@@ -344,8 +342,8 @@ void function() {
       input.focus();
 
       dialog.show();
-      assert.equal(document.activeElement, input,
-          'non-modal dialog shouldn\'t clear focus');
+      assert.notEqual(document.activeElement, input,
+        'non-modal dialog should clear focus, even with no dialog content');
 
       document.body.focus();
       input.focus();
