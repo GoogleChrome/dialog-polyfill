@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<meta charset='utf-8'>
+<head>
+<script src="../dialog-polyfill.js"></script>
+<link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
+</head>
+<body>
+
+  <p>
+Enter a value and submit the form. The close event will be fired and the value of the text box will be alerted.
+  </p>
+
+<dialog>
+  <form method="dialog">
+    <input type="text" placeholder="Enter value" />
+    <input type="submit" value="Done" />
+  </form>
+</dialog>
+
+
+
+<script>
+var dialog = document.querySelector('dialog');
+dialogPolyfill.registerDialog(dialog);
+dialog.showModal();
+
+dialog.addEventListener('close', function() {
+  var valueEl = dialog.querySelector('input[type="text"]');
+  alert(valueEl.value);
+});
+
+</script>
+</body>
+</html>
