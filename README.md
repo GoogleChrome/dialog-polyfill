@@ -75,9 +75,24 @@ When using the polyfill, the backdrop will be an adjacent element:
 ## Limitations
 
 - Modal dialogs have limitations-
-  - They should be a child of `<body>` or have parents without layout (aka, no position `absolute` or `relative` elements)
+  - They should be a child of `<body>` or have parents without layout (aka, no position `absolute` or `relative` elements), see below for more
   - The browser's chrome may not be accessible via the tab key
   - Stacking can be ruined by playing with z-index
   - Changes to the CSS top/bottom values while open aren't retained
 
 - Anchored positioning is not implemented, but the native `<dialog>` in Chrome doesn't have it either
+
+### Position
+
+One major limitation of the polyfill is that dialogs must have parents without layout.
+This is required as the spec positions dialogs as part of the page layout _where they are opened_, and not positioned at a fixed position in the user's browser.
+
+You can use a fixed layout, which allows the dialog to be positioned anywhere, by specifying the following CSS (works for both native and polyfill)-
+
+```css
+dialog {
+  position: fixed;
+  top: 50%;
+  transform: translate(0, -50%);
+}
+```
