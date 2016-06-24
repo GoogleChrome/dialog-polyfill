@@ -333,12 +333,10 @@
   };
 
   /**
-   * @param {!Element} element to upgrade
+   * @param {!Element} element to upgrade, if necessary
    */
   dialogPolyfill.registerDialog = function(element) {
-    if (element.showModal) {
-      console.warn('Can\'t upgrade <dialog>: already supported', element);
-    } else {
+    if (!element.showModal) {
       dialogPolyfill.forceRegisterDialog(element);
     }
   };
