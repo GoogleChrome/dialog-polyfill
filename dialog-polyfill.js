@@ -281,8 +281,7 @@
       try {
         cssRules = styleSheet.cssRules;
       } catch (e) {}
-      if (!cssRules)
-        continue;
+      if (!cssRules) { continue; }
       for (var j = 0; j < cssRules.length; ++j) {
         var rule = cssRules[j];
         var selectedNodes = null;
@@ -290,12 +289,14 @@
         try {
           selectedNodes = document.querySelectorAll(rule.selectorText);
         } catch(e) {}
-        if (!selectedNodes || !inNodeList(selectedNodes, element))
+        if (!selectedNodes || !inNodeList(selectedNodes, element)) {
           continue;
+        }
         var cssTop = rule.style.getPropertyValue('top');
         var cssBottom = rule.style.getPropertyValue('bottom');
-        if ((cssTop && cssTop != 'auto') || (cssBottom && cssBottom != 'auto'))
+        if ((cssTop && cssTop != 'auto') || (cssBottom && cssBottom != 'auto')) {
           return true;
+        }
       }
     }
     return false;
@@ -303,7 +304,6 @@
 
   dialogPolyfill.needsCentering = function(dialog) {
     var computedStyle = window.getComputedStyle(dialog);
-    console.info('got computedStlye positon', computedStyle.position);
     if (computedStyle.position != 'absolute') {
       return false;
     }
@@ -475,7 +475,7 @@
   };
 
   /**
-   * @param {dialogPolyfillInfo} dpi
+   * @param {!dialogPolyfillInfo} dpi
    */
   dialogPolyfill.DialogManager.prototype.removeDialog = function(dpi) {
     var index = this.pendingDialogStack.indexOf(dpi);
