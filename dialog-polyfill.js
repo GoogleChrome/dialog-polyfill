@@ -220,11 +220,9 @@
 
       // Optionally center vertically, relative to the current viewport.
       if (dialogPolyfill.needsCentering(this.dialog_)) {
-        console.info('repositioning what');
         dialogPolyfill.reposition(this.dialog_);
         this.replacedStyleTop_ = true;
       } else {
-        console.info('NOT repositioning');
         this.replacedStyleTop_ = false;
       }
 
@@ -232,10 +230,6 @@
       this.backdrop_.addEventListener('click', this.backdropClick_);
       this.dialog_.parentNode.insertBefore(this.backdrop_,
           this.dialog_.nextSibling);
-
-      this.dialog_.addEventListener('DOMNodeRemoved', function(ev) {
-        console.info('dialog itself removed', ev);
-      });
     },
 
     /**
@@ -443,8 +437,6 @@
 
     var dialog = /** @type {HTMLDialogElement} */ (event.target);
     if (!dialog.open) { return; }
-
-    console.info('dialog is removed', event);
 
     // Find a dialogPolyfillInfo which matches the removed <dialog>.
     this.pendingDialogStack.some(function(dpi) {
