@@ -354,7 +354,8 @@
     this.overlay.className = '_dialog_overlay';
     this.overlay.addEventListener('click', function(e) {
       e.stopPropagation();
-    });
+      this.checkDOM_();  // sanity-check DOM
+    }.bind(this));
 
     this.handleKey_ = this.handleKey_.bind(this);
     this.handleFocus_ = this.handleFocus_.bind(this);
@@ -369,7 +370,7 @@
    */
   dialogPolyfill.DialogManager.prototype.topDialogElement = function() {
     var dpi = this.pendingDialogStack[0];
-    return dpi ? dpi.dialog_ : null;
+    return dpi ? dpi.dialog : null;
   };
 
   /**
@@ -432,21 +433,19 @@
     }
   };
 
-  dialogPolyfill.DialogManager.prototype.handleRemove_ = function(event) {
-    if (event.target.nodeName.toUpperCase() != 'DIALOG') { return; }
-
-    var dialog = /** @type {HTMLDialogElement} */ (event.target);
-    if (!dialog.open) { return; }
-
-    // Find a dialogPolyfillInfo which matches the removed <dialog>.
-    this.pendingDialogStack.some(function(dpi) {
-      if (dpi.dialog == dialog) {
-        // This call will clear the dialogPolyfillInfo on this DialogManager
-        // as a side effect.
-        dpi.maybeHideModal();
-        return true;
-      }
+  /**
+   * Finds and removes any modal dialogs that are no longer on the page.
+   */
+  dialogPolyfill.DialogManager.prototype.checkDOM_ = function() {
+    var clone = this.pendingDialogStack.slice();
+    clone.forEach(function(dpi) {
+      dpi.maybeHideModal();
     });
+  };
+
+  dialogPolyfill.DialogManager.prototype.handleRemove_ = function(event) {
+    if (event.target.nodeName.toUpperCase() !== 'DIALOG') { return; }
+    this.checkDOM_();
   };
 
   /**
