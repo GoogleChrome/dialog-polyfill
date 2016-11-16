@@ -184,12 +184,15 @@
     /**
      * Sets the zIndex for the backdrop and dialog.
      *
-     * @param {number} backdropZ
      * @param {number} dialogZ
+     * @param {number} backdropZ
      */
-    updateZIndex: function(backdropZ, dialogZ) {
-      this.backdrop_.style.zIndex = backdropZ;
+    updateZIndex: function(dialogZ, backdropZ) {
+      if (dialogZ < backdropZ) {
+        throw new Error('dialogZ should never be < backdropZ');
+      }
       this.dialog_.style.zIndex = dialogZ;
+      this.backdrop_.style.zIndex = backdropZ;
     },
 
     /**
@@ -365,11 +368,8 @@
    * @return {Element} the top HTML dialog element, if any
    */
   dialogPolyfill.DialogManager.prototype.topDialogElement = function() {
-    if (this.pendingDialogStack.length) {
-      var t = this.pendingDialogStack[this.pendingDialogStack.length - 1];
-      return t.dialog;
-    }
-    return null;
+    var dpi = this.pendingDialogStack[0];
+    return dpi ? dpi.dialog_ : null;
   };
 
   /**
@@ -395,13 +395,13 @@
   };
 
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
-    var zIndex = this.zIndexLow_;
+    var zIndex = this.zIndexHigh_;
 
-    for (var i = 0; i < this.pendingDialogStack.length; i++) {
-      if (i == this.pendingDialogStack.length - 1) {
-        this.overlay.style.zIndex = zIndex++;
+    for (var i = 0, dpi; dpi = this.pendingDialogStack[i]; ++i) {
+      dpi.updateZIndex(--zIndex, --zIndex);
+      if (i === 0) {
+        this.overlay.style.zIndex = --zIndex;
       }
-      this.pendingDialogStack[i].updateZIndex(zIndex++, zIndex++);
     }
   };
 
@@ -458,8 +458,7 @@
     if (this.pendingDialogStack.length >= allowed) {
       return false;
     }
-    this.pendingDialogStack.push(dpi);
-    if (this.pendingDialogStack.length == 1) {
+    if (this.pendingDialogStack.unshift(dpi) === 1) {
       this.blockDocument();
     }
     this.updateStacking();
@@ -475,7 +474,7 @@
 
     this.pendingDialogStack.splice(index, 1);
     this.updateStacking();
-    if (this.pendingDialogStack.length == 0) {
+    if (this.pendingDialogStack.length === 0) {
       this.unblockDocument();
     }
   };
