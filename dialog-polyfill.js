@@ -77,12 +77,17 @@
     }
 
     this.maybeHideModal = this.maybeHideModal.bind(this);
+    this.maybeSetADefaultRoleValue = this.maybeSetADefaultRoleValue.bind(this);
+    this.callMaybies = this.callMaybies.bind(this);
+
     if ('MutationObserver' in window) {
       // IE11+, most other browsers.
-      var mo = new MutationObserver(this.maybeHideModal);
-      mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
+      var mo = new MutationObserver(this.callMaybies);
+      mo.observe(dialog, { attributes: true, attributeFilter: ['open', 'role'] });
+
+
     } else {
-      dialog.addEventListener('DOMAttrModified', this.maybeHideModal);
+      dialog.addEventListener('DOMAttrModified', this.callMaybies);
     }
     // Note that the DOM is observed inside DialogManager while any dialog
     // is being displayed as a modal, to catch modal removal from the DOM.
@@ -95,6 +100,7 @@
     this.backdrop_ = document.createElement('div');
     this.backdrop_.className = 'backdrop';
     this.backdropClick_ = this.backdropClick_.bind(this);
+    this.maybeSetADefaultRoleValue();
   }
 
   dialogPolyfillInfo.prototype = {
@@ -130,6 +136,26 @@
         this.backdrop_.parentElement.removeChild(this.backdrop_);
       }
       dialogPolyfill.dm.removeDialog(this);
+    },
+
+    /**
+     * Maybe assign a default role attribute to this dialog that is being
+     * polyfilled. Without one, the dialog won't have a useful a11y tree generated
+     * for its core usage in a Web application.
+     */
+    maybeSetADefaultRoleValue: function(){
+      if ( !this.dialog.hasAttribute('role') || this.dialog.getAttribute('role') === ''  ) {
+        this.dialog.setAttribute( 'role', 'dialog'  );
+      }
+    },
+
+    /**
+    * Handles the simultaneous need to call series of Maybies for the dialog
+    * commonly needed to be considered in quick succession to one another.
+    */
+    callMaybies: function(){
+      this.maybeHideModal();
+      this.maybeSetADefaultRoleValue();
     },
 
     /**
