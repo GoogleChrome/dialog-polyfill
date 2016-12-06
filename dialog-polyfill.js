@@ -103,6 +103,10 @@
       return this.dialog_;
     },
 
+    get _isConnected() {
+      return document.body.contains(this.dialog_) || !!this.dialog_.isConnected;
+    },
+
     /**
      * Maybe remove this dialog from the modal top layer. This is called when
      * a modal dialog may no longer be tenable, e.g., when the dialog is no
@@ -110,8 +114,7 @@
      */
     maybeHideModal: function() {
       if (!this.openAsModal_) { return; }
-      if (this.dialog_.hasAttribute('open') &&
-          document.body.contains(this.dialog_)) { return; }
+      if (this.dialog_.hasAttribute('open') && this._isConnected) { return; }
 
       this.openAsModal_ = false;
       this.dialog_.style.zIndex = '';
@@ -126,8 +129,8 @@
 
       // Optimistically clear the modal part of this <dialog>.
       this.backdrop_.removeEventListener('click', this.backdropClick_);
-      if (this.backdrop_.parentElement) {
-        this.backdrop_.parentElement.removeChild(this.backdrop_);
+      if (this.backdrop_.parentNode) {
+        this.backdrop_.parentNode.removeChild(this.backdrop_);
       }
       dialogPolyfill.dm.removeDialog(this);
     },
@@ -212,7 +215,7 @@
       if (this.dialog_.hasAttribute('open')) {
         throw new Error('Failed to execute \'showModal\' on dialog: The element is already open, and therefore cannot be opened modally.');
       }
-      if (!document.body.contains(this.dialog_)) {
+      if (!this._isConnected) {
         throw new Error('Failed to execute \'showModal\' on dialog: The element is not in a Document.');
       }
       if (!dialogPolyfill.dm.pushDialog(this)) {
