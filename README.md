@@ -80,8 +80,6 @@ When using the polyfill, the backdrop will be an adjacent element:
   - Stacking can be ruined by playing with z-index
   - Changes to the CSS top/bottom values while open aren't retained
 
-- Anchored positioning is not implemented, but the native `<dialog>` in Chrome doesn't have it either
-
 ### Position
 
 One major limitation of the polyfill is that dialogs must have parents without layout.
