@@ -332,6 +332,26 @@ void function() {
       assert.notEqual(document.activeElement, input,
           'parent focus should not be restored');
     });
+    test('don\'t scroll anything into focus', function() {
+      // https://github.com/GoogleChrome/dialog-polyfill/issues/119
+
+      var div = cleanup(document.createElement('div'));
+      document.body.appendChild(div);
+
+      var inner = document.createElement('div');
+      inner.style.height = '10000px';
+      div.appendChild(inner);
+
+      div.appendChild(dialog);
+
+      var input = cleanup(document.createElement('input'));
+      input.type = 'text';
+      dialog.appendChild(input);
+
+      assert.equal(document.documentElement.scrollTop, 0);
+      dialog.showModal();
+      assert.equal(document.documentElement.scrollTop, 0);
+    });
   });
 
   suite('top layer / inert', function() {
