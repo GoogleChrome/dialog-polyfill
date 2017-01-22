@@ -218,7 +218,7 @@
       if (!dialogPolyfill.dm.pushDialog(this)) {
         throw new Error('Failed to execute \'showModal\' on dialog: There are too many open modal dialogs.');
       }
-      this.show();
+      this.setOpen(true);
       this.openAsModal_ = true;
 
       // Optionally center vertically, relative to the current viewport.
@@ -233,6 +233,9 @@
       this.backdrop_.addEventListener('click', this.backdropClick_);
       this.dialog_.parentNode.insertBefore(this.backdrop_,
           this.dialog_.nextSibling);
+
+      // Focus on whatever inside the dialog.
+      this.focus_();
     },
 
     /**
