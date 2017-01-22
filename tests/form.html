@@ -8,16 +8,21 @@
 <body>
 
   <p>
-Enter a value and submit the form. The close event will be fired and the value of the text box will be alerted.
+Enter a value and submit the form. The close event will be fired and the <code>returnValue</code> of the dialog will be alerted.
   </p>
 
 <dialog>
   <form method="dialog">
     <input type="text" placeholder="Enter value" />
+    <input type="reset" value="Reset" />
+    <input type="submit" value="Stuff" />
     <input type="submit" value="Done" />
+    <button type="submit" value="Button Value Is Different Than Text">Button Submit</button>
+    <button value="Regular Button Value">Button</button>
   </form>
 </dialog>
 
+<button id="show">Show Dialog</button>
 
 
 <script>
@@ -27,7 +32,11 @@ dialog.showModal();
 
 dialog.addEventListener('close', function() {
   var valueEl = dialog.querySelector('input[type="text"]');
-  alert(valueEl.value);
+  alert(dialog.returnValue);
+});
+
+show.addEventListener('click', function() {
+  dialog.showModal();
 });
 
 </script>
