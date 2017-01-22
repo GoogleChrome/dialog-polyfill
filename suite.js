@@ -266,6 +266,22 @@ void function() {
       backdrop.click();
       assert.equal(clickFired, 1);
     });
+    test('clamped to top of page', function() {
+      var big = cleanup(document.createElement('div'));
+      big.style.height = '200vh';  // 2x view height
+      document.body.appendChild(big);
+      document.documentElement.scrollTop = document.documentElement.scrollHeight / 2;
+
+      dialog.style.height = document.documentElement.scrollHeight + 200 + 'px';
+      dialog.showModal();
+
+      var visibleRect = dialog.getBoundingClientRect();
+      assert.equal(visibleRect.top, 0, 'large dialog should be visible at top of page');
+
+      var style = window.getComputedStyle(dialog);
+      assert.equal(style.top, document.documentElement.scrollTop + 'px',
+          'large dialog should be absolutely positioned at scroll top');
+    });
   });
 
   suite('form focus', function() {
