@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<meta charset='utf-8'>
+<head>
+<script src="../dialog-polyfill.js"></script>
+<link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
+</head>
+<body>
+
+  <p>
+The dialog below is incorrectly positioned within a stacking context.
+It should generate a console warning message, and place the <code>_dialog_overlay</code> in a different place in order to try to work around the problem without moving the dialog itself.
+  </p>
+
+<div style="position: absolute; top: 100px; left: 10vw; width: 80vw; height: 400px; background: blue; opacity: 0.7;">
+
+<dialog>
+  <form method="dialog">
+    <input type="submit" />
+  </form>
+  <p>
+    Help, I'm inside an extra stacking context D:
+  </p>
+</dialog>
+
+</div>
+
+<button id="show">Show Dialog</button>
+
+<script>
+var dialog = document.querySelector('dialog');
+dialogPolyfill.registerDialog(dialog);
+dialog.showModal();
+
+show.addEventListener('click', function() {
+  dialog.showModal();
+});
+
+</script>
+</body>
+</html>

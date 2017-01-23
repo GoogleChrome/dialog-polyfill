@@ -1,11 +1,8 @@
 dialog-polyfill.js is a polyfill for `<dialog>`.
+Check out [some](http://demo.agektmr.com/dialog/) [demos](https://falken-testing.appspot.com/dialog/index.html) (only available with native support).
 
-#### [Demo](http://demo.agektmr.com/dialog/)
-
-`<dialog>` is an element for a popup box in a web page, including a modal option. See
-[more information and demos](http://falken-testing.appspot.com/dialog/index.html) (needs a browser with native support, like Chrome)
-and the
-[HTML spec](https://html.spec.whatwg.org/multipage/forms.html#the-dialog-element).
+`<dialog>` is an element for a popup box in a web page, including a modal option which will make the rest of the page inert during use.
+See the [HTML spec](https://html.spec.whatwg.org/multipage/forms.html#the-dialog-element).
 
 ## Usage
 
@@ -66,18 +63,24 @@ dialog + .backdrop { /* polyfill */
 
 ## Limitations
 
-- Modal dialogs have limitations-
-  - They should be a child of `<body>` or have parents without layout (aka, no position `absolute` or `relative` elements), see below for more
-  - The browser's chrome may not be accessible via the tab key
-  - Stacking can be ruined by playing with z-index
-  - Changes to the CSS top/bottom values while open aren't retained
+In the polyfill, modal dialogs have limitations-
 
-### Position
+- They should not be contained by parents that create a stacking context, see below
+- The browser's chrome may not always be accessible via the tab key
+- Changes to the CSS top/bottom values while open aren't retained
 
-One major limitation of the polyfill is that dialogs must have parents without layout.
-This is required as the spec positions dialogs as part of the page layout _where they are opened_, and not positioned at a fixed position in the user's browser.
+### Stacking Context
 
-You can use a fixed layout, which allows the dialog to be positioned anywhere, by specifying the following CSS (works for both native and polyfill)-
+The major limitation of the polyfill is that dialogs should not have parents that create [a stacking context](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Positioning/Understanding_z_index/The_stacking_context).
+The easiest way to solve this is to move your `<dialog>` element to be a child of `<body>`.
+
+If this isn't possible you may still be able to use the dialog.
+However, you may want to resolve it for two major reasons-
+
+1. The polyfill can't guarantee that the dialog will be the top-most element of your page
+2. The dialog may be positioned incorrectly as they are positioned as part of the page layout _where they are opened_ (defined by spec), and not at a fixed position in the user's browser.
+
+To position a dialog in the center (regardless of user scroll position or stacking context), you can specify the following CSS-
 
 ```css
 dialog {

@@ -13,6 +13,32 @@
   }
 
   /**
+   * @param {!Element} el to check for stacking context
+   * @param {boolean} whether this el or its parents creates a stacking context
+   */
+  function createsStackingContext(el) {
+    while (el && el !== document.body) {
+      var s = window.getComputedStyle(el);
+      function invalid(k, ok) {
+        return !(s[k] === undefined || s[k] === (ok || 'none'));
+      }
+      if (s.opacity < 1 ||
+          invalid('zIndex', 'auto') ||
+          invalid('transform') ||
+          invalid('mixBlendMode', 'normal') ||
+          invalid('filter') ||
+          invalid('perspective') ||
+          s.isolation === 'isolate' ||
+          s.position === 'fixed' ||
+          s.webkitOverflowScrolling === 'touch') {
+        return true;
+      }
+      el = el.parentNode;
+    }
+    return false;
+  }
+
+  /**
    * Finds the nearest <dialog> from the passed element.
    *
    * @param {Element} el to search from
@@ -236,10 +262,16 @@
       }
       if (!document.body.contains(this.dialog_)) {
         throw new Error('Failed to execute \'showModal\' on dialog: The element is not in a Document.');
-      }
-      if (!dialogPolyfill.dm.pushDialog(this)) {
+      } else if (!dialogPolyfill.dm.pushDialog(this)) {
         throw new Error('Failed to execute \'showModal\' on dialog: There are too many open modal dialogs.');
       }
+
+      if (createsStackingContext(this.dialog_.parentNode)) {
+        console.warn('A dialog is being shown inside a stacking context. ' +
+            'This may cause it to be unusable. For more information, see this link: ' +
+            'https://github.com/GoogleChrome/dialog-polyfill/#stacking-context');
+      }
+
       this.setOpen(true);
       this.openAsModal_ = true;
 
@@ -409,7 +441,6 @@
    * handlers.
    */
   dialogPolyfill.DialogManager.prototype.blockDocument = function() {
-    document.body.appendChild(this.overlay);
     document.documentElement.addEventListener('focus', this.handleFocus_, true);
     document.addEventListener('keydown', this.handleKey_);
     this.mo_ && this.mo_.observe(document, {childList: true, subtree: true});
@@ -420,7 +451,9 @@
    * dialogs are visible.
    */
   dialogPolyfill.DialogManager.prototype.unblockDocument = function() {
-    document.body.removeChild(this.overlay);
+    if (this.overlay.parentNode) {
+      this.overlay.parentNode.removeChild(this.overlay);
+    }
     document.documentElement.removeEventListener('focus', this.handleFocus_, true);
     document.removeEventListener('keydown', this.handleKey_);
     this.mo_ && this.mo_.disconnect();
@@ -431,10 +464,13 @@
 
     for (var i = 0, dpi; dpi = this.pendingDialogStack[i]; ++i) {
       dpi.updateZIndex(--zIndex, --zIndex);
-      if (i === 0) {
-        this.overlay.style.zIndex = --zIndex;
-      }
     }
+    this.overlay.style.zIndex = --zIndex;
+
+    // Make the overlay a sibling of the dialog itself.
+    var last = this.pendingDialogStack[0];
+    var p = last.dialog.parentNode || document.body;
+    p.appendChild(this.overlay);
   };
 
   dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
@@ -512,9 +548,10 @@
     if (index == -1) { return; }
 
     this.pendingDialogStack.splice(index, 1);
-    this.updateStacking();
     if (this.pendingDialogStack.length === 0) {
       this.unblockDocument();
+    } else {
+      this.updateStacking();
     }
   };
 
