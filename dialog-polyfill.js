@@ -13,27 +13,27 @@
   }
 
   /**
-   * @param {!Element} el to check for stacking context
-   * @param {boolean} whether this el or its parents creates a stacking context
+   * @param {Element} el to check for stacking context
+   * @return {boolean} whether this el or its parents creates a stacking context
    */
   function createsStackingContext(el) {
     while (el && el !== document.body) {
       var s = window.getComputedStyle(el);
-      function invalid(k, ok) {
-        return !(s[k] === undefined || s[k] === (ok || 'none'));
+      var invalid = function(k, ok) {
+        return !(s[k] === undefined || s[k] === ok);
       }
       if (s.opacity < 1 ||
           invalid('zIndex', 'auto') ||
-          invalid('transform') ||
+          invalid('transform', 'none') ||
           invalid('mixBlendMode', 'normal') ||
-          invalid('filter') ||
-          invalid('perspective') ||
-          s.isolation === 'isolate' ||
+          invalid('filter', 'none') ||
+          invalid('perspective', 'none') ||
+          s['isolation'] === 'isolate' ||
           s.position === 'fixed' ||
           s.webkitOverflowScrolling === 'touch') {
         return true;
       }
-      el = el.parentNode;
+      el = /** @type {Element} */ (el.parentNode);
     }
     return false;
   }
@@ -262,11 +262,12 @@
       }
       if (!document.body.contains(this.dialog_)) {
         throw new Error('Failed to execute \'showModal\' on dialog: The element is not in a Document.');
-      } else if (!dialogPolyfill.dm.pushDialog(this)) {
+      }
+      if (!dialogPolyfill.dm.pushDialog(this)) {
         throw new Error('Failed to execute \'showModal\' on dialog: There are too many open modal dialogs.');
       }
 
-      if (createsStackingContext(this.dialog_.parentNode)) {
+      if (createsStackingContext(/** @type {Element} */ (this.dialog_.parentNode))) {
         console.warn('A dialog is being shown inside a stacking context. ' +
             'This may cause it to be unusable. For more information, see this link: ' +
             'https://github.com/GoogleChrome/dialog-polyfill/#stacking-context');
