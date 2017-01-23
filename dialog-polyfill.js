@@ -150,6 +150,19 @@
      * @param {!Event} e to redirect
      */
     backdropClick_: function(e) {
+      if (!this.dialog_.hasAttribute('tabindex')) {
+        // Clicking on the backdrop should move the implicit cursor, even if dialog cannot be
+        // focused. Create a fake thing to focus on. If the backdrop was _before_ the dialog, this
+        // would not be needed - clicks would move the implicit cursor there.
+        var fake = document.createElement('div');
+        this.dialog_.insertBefore(fake, this.dialog_.firstChild);
+        fake.tabIndex = -1;
+        fake.focus();
+        this.dialog_.removeChild(fake);
+      } else {
+        this.dialog_.focus();
+      }
+
       var redirectedEvent = document.createEvent('MouseEvents');
       redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
           e.detail, e.screenX, e.screenY, e.clientX, e.clientY, e.ctrlKey,
@@ -165,6 +178,9 @@
     focus_: function() {
       // Find element with `autofocus` attribute, or fall back to the first form/tabindex control.
       var target = this.dialog_.querySelector('[autofocus]:not([disabled])');
+      if (!target && this.dialog_.tabIndex >= 0) {
+        target = this.dialog_;
+      }
       if (!target) {
         // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
         // alternative involves stepping through and trying to focus everything.
@@ -363,14 +379,8 @@
 
     this.zIndexLow_ = 100000;
     this.zIndexHigh_ = 100000 + 150;
-  };
 
-  /**
-   * @return {Element} the top HTML dialog element, if any
-   */
-  dialogPolyfill.DialogManager.prototype.topDialogElement = function() {
-    var dpi = this.pendingDialogStack[0];
-    return dpi ? dpi.dialog : null;
+    this.forwardTab_ = undefined;
   };
 
   /**
@@ -379,7 +389,7 @@
    */
   dialogPolyfill.DialogManager.prototype.blockDocument = function() {
     document.body.appendChild(this.overlay);
-    document.body.addEventListener('focus', this.handleFocus_, true);
+    document.documentElement.addEventListener('focus', this.handleFocus_, true);
     document.addEventListener('keydown', this.handleKey_);
     document.addEventListener('DOMNodeRemoved', this.handleRemove_);
   };
@@ -390,7 +400,7 @@
    */
   dialogPolyfill.DialogManager.prototype.unblockDocument = function() {
     document.body.removeChild(this.overlay);
-    document.body.removeEventListener('focus', this.handleFocus_, true);
+    document.documentElement.removeEventListener('focus', this.handleFocus_, true);
     document.removeEventListener('keydown', this.handleKey_);
     document.removeEventListener('DOMNodeRemoved', this.handleRemove_);
   };
@@ -408,28 +418,42 @@
 
   dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
     var candidate = findNearestDialog(/** @type {Element} */ (event.target));
-    if (candidate != this.topDialogElement()) {
-      event.preventDefault();
-      event.stopPropagation();
-      safeBlur(/** @type {Element} */ (event.target));
-      // TODO: Focus on the browser chrome (aka document) or the dialog itself
-      // depending on the tab direction.
-      return false;
+    var dpi = this.pendingDialogStack[0];
+    if (!dpi || candidate === dpi.dialog) { return; }
+
+    event.preventDefault();
+    event.stopPropagation();
+    safeBlur(/** @type {Element} */ (event.target));
+
+    var position = dpi.dialog.compareDocumentPosition(event.target);
+    if (position & Node.DOCUMENT_POSITION_PRECEDING) {
+      if (this.forwardTab_) {
+        dpi.focus_();
+      } else {
+        document.documentElement.focus();
+      }
+    } else {
+      // TODO: Focus after the dialog, is ignored.
     }
+
+    return false;
   };
 
   dialogPolyfill.DialogManager.prototype.handleKey_ = function(event) {
-    if (event.keyCode == 27) {
+    this.forwardTab_ = undefined;
+    if (event.keyCode === 27) {
       event.preventDefault();
       event.stopPropagation();
       var cancelEvent = new supportCustomEvent('cancel', {
         bubbles: false,
         cancelable: true
       });
-      var dialog = this.topDialogElement();
-      if (dialog.dispatchEvent(cancelEvent)) {
-        dialog.close();
+      var dpi = this.pendingDialogStack[0];
+      if (dpi && dpi.dialog.dispatchEvent(cancelEvent)) {
+        dpi.dialog.close();
       }
+    } else if (event.keyCode === 9) {
+      this.forwardTab_ = !event.shiftKey;
     }
   };
 

@@ -282,6 +282,21 @@ void function() {
       backdrop.click();
       assert.equal(clickFired, 1);
     });
+    test('backdrop click focuses dialog', function() {
+      dialog.showModal();
+      dialog.tabIndex = 0;
+
+      var input = document.createElement('input');
+      input.type = 'text';
+      dialog.appendChild(input);
+
+      // TODO: It would be nice to check `input` instead here, but there's no more reliable ways
+      // to emulate a browser tab event (Firefox, Chrome etc have made it a security violation).
+
+      var backdrop = dialog.nextElementSibling;
+      backdrop.click();
+      assert.equal(document.activeElement, dialog);
+    });
   });
 
   suite('form focus', function() {
