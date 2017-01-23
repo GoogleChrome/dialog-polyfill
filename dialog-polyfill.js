@@ -1,5 +1,6 @@
 (function() {
 
+  // nb. This is for IE10 and lower _only_.
   var supportCustomEvent = window.CustomEvent;
   if (!supportCustomEvent || typeof supportCustomEvent == 'object') {
     supportCustomEvent = function CustomEvent(event, x) {
@@ -19,7 +20,7 @@
    */
   function findNearestDialog(el) {
     while (el) {
-      if (el.nodeName.toUpperCase() == 'DIALOG') {
+      if (el.localName === 'dialog') {
         return /** @type {HTMLDialogElement} */ (el);
       }
       el = el.parentElement;
@@ -76,13 +77,21 @@
       dialog.returnValue = '';
     }
 
-    this.maybeHideModal = this.maybeHideModal.bind(this);
+    var cb = this.maybeHideModal.bind(this);
     if ('MutationObserver' in window) {
-      // IE11+, most other browsers.
-      var mo = new MutationObserver(this.maybeHideModal);
-      mo.observe(dialog, { attributes: true, attributeFilter: ['open'] });
+      var mo = new MutationObserver(cb);
+      mo.observe(dialog, {attributes: true, attributeFilter: ['open']});
     } else {
-      dialog.addEventListener('DOMAttrModified', this.maybeHideModal);
+      // IE10 and below support. Note that DOMNodeRemoved etc fire _before_ removal. They also
+      // seem to fire even if the element was removed as part of a parent removal.
+      var timeout;
+      var delayModel = function() {
+        window.clearTimeout(timeout);
+        timeout = window.setTimeout(cb, 0);
+      };
+      ['DOMAttrModified', 'DOMNodeRemoved', 'DOMNodeRemovedFromDocument'].forEach(function(name) {
+        dialog.addEventListener(name, delayModel);
+      }, this);
     }
     // Note that the DOM is observed inside DialogManager while any dialog
     // is being displayed as a modal, to catch modal removal from the DOM.
@@ -110,9 +119,7 @@
      */
     maybeHideModal: function() {
       if (!this.openAsModal_) { return; }
-      if (this.dialog_.hasAttribute('open') &&
-          document.body.contains(this.dialog_)) { return; }
-
+      if (this.dialog_.hasAttribute('open') && document.body.contains(this.dialog_)) { return; }
       this.openAsModal_ = false;
       this.dialog_.style.zIndex = '';
 
@@ -339,7 +346,7 @@
       console.warn('This browser already supports <dialog>, the polyfill ' +
           'may not work correctly', element);
     }
-    if (element.nodeName.toUpperCase() != 'DIALOG') {
+    if (element.localName !== 'dialog') {
       throw new Error('Failed to register dialog: The element is not a dialog.');
     }
     new dialogPolyfillInfo(/** @type {!HTMLDialogElement} */ (element));
@@ -375,12 +382,26 @@
 
     this.handleKey_ = this.handleKey_.bind(this);
     this.handleFocus_ = this.handleFocus_.bind(this);
-    this.handleRemove_ = this.handleRemove_.bind(this);
 
     this.zIndexLow_ = 100000;
     this.zIndexHigh_ = 100000 + 150;
 
     this.forwardTab_ = undefined;
+
+    if ('MutationObserver' in window) {
+      this.mo_ = new MutationObserver(function(records) {
+        var valid = records.some(function(rec) {
+          for (var i = 0, c; c = rec.removedNodes[i]; ++i) {
+            // is this removal a dialog, or contain a dialog?
+            if (c instanceof Element && (c.localName === 'dialog' || c.querySelector('dialog'))) {
+              return true;
+            }
+          }
+          return false;
+        });
+        valid && this.checkDOM_();
+      }.bind(this));
+    }
   };
 
   /**
@@ -391,7 +412,7 @@
     document.body.appendChild(this.overlay);
     document.documentElement.addEventListener('focus', this.handleFocus_, true);
     document.addEventListener('keydown', this.handleKey_);
-    document.addEventListener('DOMNodeRemoved', this.handleRemove_);
+    this.mo_ && this.mo_.observe(document, {childList: true, subtree: true});
   };
 
   /**
@@ -402,7 +423,7 @@
     document.body.removeChild(this.overlay);
     document.documentElement.removeEventListener('focus', this.handleFocus_, true);
     document.removeEventListener('keydown', this.handleKey_);
-    document.removeEventListener('DOMNodeRemoved', this.handleRemove_);
+    this.mo_ && this.mo_.disconnect();
   };
 
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
@@ -467,11 +488,6 @@
     });
   };
 
-  dialogPolyfill.DialogManager.prototype.handleRemove_ = function(event) {
-    if (event.target.nodeName.toUpperCase() !== 'DIALOG') { return; }
-    this.checkDOM_();
-  };
-
   /**
    * @param {!dialogPolyfillInfo} dpi
    * @return {boolean} whether the dialog was allowed
@@ -511,7 +527,7 @@
   document.addEventListener('submit', function(ev) {
     var target = ev.target;
     if (!target || !target.hasAttribute('method')) { return; }
-    if (target.getAttribute('method').toLowerCase() != 'dialog') { return; }
+    if (target.getAttribute('method').toLowerCase() !== 'dialog') { return; }
     ev.preventDefault();
 
     var dialog = findNearestDialog(/** @type {Element} */ (ev.target));
