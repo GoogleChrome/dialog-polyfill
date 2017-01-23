@@ -82,7 +82,8 @@
       var mo = new MutationObserver(cb);
       mo.observe(dialog, {attributes: true, attributeFilter: ['open']});
     } else {
-      // IE10 and below support. Note that DOMNodeRemoved etc fire _before_ removal.
+      // IE10 and below support. Note that DOMNodeRemoved etc fire _before_ removal. They also
+      // seem to fire even if the element was removed as part of a parent removal.
       var timeout;
       var delayModel = function() {
         window.clearTimeout(timeout);
@@ -391,7 +392,8 @@
       this.mo_ = new MutationObserver(function(records) {
         var valid = records.some(function(rec) {
           for (var i = 0, c; c = rec.removedNodes[i]; ++i) {
-            if (c.localName === 'dialog') {
+            // is this removal a dialog, or contain a dialog?
+            if (c instanceof Element && (c.localName === 'dialog' || c.querySelector('dialog'))) {
               return true;
             }
           }

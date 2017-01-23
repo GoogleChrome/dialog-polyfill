@@ -181,6 +181,20 @@ void function() {
         done();
       }, 0);
     });
+    test('DOM removal inside other element', function(done) {
+      var div = cleanup(document.createElement('div'));
+      document.body.appendChild(div);
+      div.appendChild(dialog);
+
+      dialog.showModal();
+      document.body.removeChild(div);
+
+      window.setTimeout(function() {
+        assert.isNull(document.querySelector('.backdrop'), 'dialog removal should clear modal');
+        assert.isTrue(dialog.open, 'removed dialog should still be open');
+        done();
+      }, 0);
+    });
     test('has a11y property', function() {
       assert.equal(dialog.getAttribute('role'), 'dialog', 'role should be dialog');
     });
