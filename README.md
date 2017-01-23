@@ -52,22 +52,14 @@ This polyfill works on modern versions of all major browsers. It also supports I
 
 ### ::backdrop
 
-In native `<dialog>`, the backdrop is a pseudo-element:
-
-```css
-#mydialog::backdrop {
-  background-color: green;
-}
-```
-
+In native `<dialog>`, the backdrop is a pseudo-element.
 When using the polyfill, the backdrop will be an adjacent element:
 
 ```css
-#mydialog + .backdrop {
+dialog::backdrop { /* native */
   background-color: green;
 }
-
-#mydialog::backdrop {
+dialog + .backdrop { /* polyfill */
   background-color: green;
 }
 ```
