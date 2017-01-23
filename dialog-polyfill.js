@@ -94,7 +94,7 @@
 
     this.backdrop_ = document.createElement('div');
     this.backdrop_.className = 'backdrop';
-    this.backdropClick_ = this.backdropClick_.bind(this);
+    this.backdrop_.addEventListener('click', this.backdropClick_.bind(this));
   }
 
   dialogPolyfillInfo.prototype = {
@@ -125,7 +125,6 @@
       }
 
       // Optimistically clear the modal part of this <dialog>.
-      this.backdrop_.removeEventListener('click', this.backdropClick_);
       if (this.backdrop_.parentElement) {
         this.backdrop_.parentElement.removeChild(this.backdrop_);
       }
@@ -230,9 +229,7 @@
       }
 
       // Insert backdrop.
-      this.backdrop_.addEventListener('click', this.backdropClick_);
-      this.dialog_.parentNode.insertBefore(this.backdrop_,
-          this.dialog_.nextSibling);
+      this.dialog_.parentNode.insertBefore(this.backdrop_, this.dialog_.nextSibling);
 
       // Focus on whatever inside the dialog.
       this.focus_();
