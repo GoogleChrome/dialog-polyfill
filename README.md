@@ -2,7 +2,7 @@ dialog-polyfill.js is a polyfill for `<dialog>`.
 Check out [some demos](http://demo.agektmr.com/dialog/)!
 
 `<dialog>` is an element for a popup box in a web page, including a modal option which will make the rest of the page inert during use.
-This could be useful to block your users interaction until they give you a response, or to confirm a user action.
+This could be useful to block a user's interaction until they give you a response, or to confirm an action.
 See the [HTML spec](https://html.spec.whatwg.org/multipage/forms.html#the-dialog-element).
 
 ## Usage
