@@ -465,8 +465,11 @@
 
     for (var i = 0, dpi; dpi = this.pendingDialogStack[i]; ++i) {
       dpi.updateZIndex(--zIndex, --zIndex);
+
+      if (i === 0) {
+        this.overlay.style.zIndex = --zIndex;
+      }
     }
-    this.overlay.style.zIndex = --zIndex;
 
     // Make the overlay a sibling of the dialog itself.
     var last = this.pendingDialogStack[0];

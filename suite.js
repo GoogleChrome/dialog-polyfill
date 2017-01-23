@@ -444,6 +444,20 @@ void function() {
       assert.isNotNull(overlay);
       assert.equal(overlay.parentNode, dialog.parentNode);
     });
+    test('overlay is between topmost and remaining dialogs', function() {
+      dialog.showModal();
+
+      var other = cleanup(createDialog());
+      document.body.appendChild(other);
+      other.showModal();
+
+      var overlay = document.querySelector('._dialog_overlay');
+      assert.isNotNull(overlay);
+      assert.equal(overlay.parentNode, other.parentNode);
+
+      assert.isAbove(other.style.zIndex, overlay.style.zIndex, 'top-most dialog above overlay');
+      assert.isAbove(overlay.style.zIndex, dialog.style.zIndex, 'overlay above other dialogs');
+    });
   });
 
   suite('events', function() {
