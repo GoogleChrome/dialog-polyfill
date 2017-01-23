@@ -167,15 +167,15 @@ void function() {
       var parentNode = dialog.parentNode;
       parentNode.removeChild(dialog);
 
-      // DOMNodeRemoved happens at the end of the frame: this test must be
-      // async to complete successfully.
+      // DOMNodeRemoved defers its task a frame (since it occurs before removal, not after). This
+      // doesn't effect MutationObserver, just delays the test a frame.
       window.setTimeout(function() {
         assert.isNull(document.querySelector('.backdrop'), 'dialog removal should clear modal');
 
         assert.isTrue(dialog.open, 'removed dialog should still be open');
         parentNode.appendChild(dialog);
 
-        assert.isTrue(dialog.open, 'removed dialog should still be open');
+        assert.isTrue(dialog.open, 're-added dialog should still be open');
         assert.isNull(document.querySelector('.backdrop'), 're-add dialog should not be modal');
 
         done();
