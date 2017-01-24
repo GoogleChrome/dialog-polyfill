@@ -148,6 +148,15 @@ void function() {
       dialog.setAttribute('open', '');
       assert.isTrue(dialog.open, 'attribute opens dialog');
     });
+    test('changing open to dummy value is ignored', function() {
+      dialog.showModal();
+
+      dialog.setAttribute('open', 'dummy, ignored');
+      assert.isTrue(dialog.open, 'dialog open with dummy open value');
+
+      var overlay = document.querySelector('._dialog_overlay');
+      assert(overlay, 'dialog is still modal');
+    });
     test('show/showModal outside document', function() {
       dialog.open = false;
       dialog.parentNode.removeChild(dialog);
@@ -158,10 +167,19 @@ void function() {
       assert.isTrue(dialog.open, 'can open non-modal outside document');
       assert.isFalse(document.body.contains(dialog));
     });
-    test('DOM removal', function(done) {
-      dialog.showModal();
-      assert.isTrue(dialog.open);
+    test('has a11y property', function() {
+      assert.equal(dialog.getAttribute('role'), 'dialog', 'role should be dialog');
+    });
+  });
 
+  suite('DOM', function() {
+    setup(function(done) {
+      // DOM tests wait for modal to settle, so MutationOberver doesn't coalesce attr changes
+      dialog.showModal();
+      window.setTimeout(done, 0);
+    });
+    test('DOM direct removal', function(done) {
+      assert.isTrue(dialog.open);
       assert.isNotNull(document.querySelector('.backdrop'));
 
       var parentNode = dialog.parentNode;
@@ -186,7 +204,6 @@ void function() {
       document.body.appendChild(div);
       div.appendChild(dialog);
 
-      dialog.showModal();
       document.body.removeChild(div);
 
       window.setTimeout(function() {
@@ -195,8 +212,17 @@ void function() {
         done();
       }, 0);
     });
-    test('has a11y property', function() {
-      assert.equal(dialog.getAttribute('role'), 'dialog', 'role should be dialog');
+    test('DOM instant remove/add', function(done) {
+      var div = cleanup(document.createElement('div'));
+      document.body.appendChild(div);
+      dialog.parentNode.removeChild(dialog);
+      div.appendChild(dialog);
+
+      window.setTimeout(function() {
+        assert.isNull(document.querySelector('.backdrop'), 'backdrop should disappear');
+        assert.isTrue(dialog.open);
+        done();
+      }, 0);
     });
   });
 

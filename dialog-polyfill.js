@@ -33,7 +33,7 @@
           s.webkitOverflowScrolling === 'touch') {
         return true;
       }
-      el = /** @type {Element} */ (el.parentNode);
+      el = el.parentElement;
     }
     return false;
   }
@@ -103,21 +103,28 @@
       dialog.returnValue = '';
     }
 
-    var cb = this.maybeHideModal.bind(this);
     if ('MutationObserver' in window) {
-      var mo = new MutationObserver(cb);
+      var mo = new MutationObserver(this.maybeHideModal.bind(this));
       mo.observe(dialog, {attributes: true, attributeFilter: ['open']});
     } else {
       // IE10 and below support. Note that DOMNodeRemoved etc fire _before_ removal. They also
-      // seem to fire even if the element was removed as part of a parent removal.
+      // seem to fire even if the element was removed as part of a parent removal. Use the removed
+      // events to force downgrade (useful if removed/immediately added).
+      var removed = false;
+      var cb = function() {
+        removed ? this.downgradeModal() : this.maybeHideModal();
+        removed = false;
+      }.bind(this);
       var timeout;
-      var delayModel = function() {
+      var delayModel = function(ev) {
+        var cand = 'DOMNodeRemoved';
+        removed |= (ev.type.substr(0, cand.length) === cand);
         window.clearTimeout(timeout);
         timeout = window.setTimeout(cb, 0);
       };
       ['DOMAttrModified', 'DOMNodeRemoved', 'DOMNodeRemovedFromDocument'].forEach(function(name) {
         dialog.addEventListener(name, delayModel);
-      }, this);
+      });
     }
     // Note that the DOM is observed inside DialogManager while any dialog
     // is being displayed as a modal, to catch modal removal from the DOM.
@@ -144,23 +151,28 @@
      * longer open or is no longer part of the DOM.
      */
     maybeHideModal: function() {
-      if (!this.openAsModal_) { return; }
       if (this.dialog_.hasAttribute('open') && document.body.contains(this.dialog_)) { return; }
+      this.downgradeModal();
+    },
+
+    /**
+     * Remove this dialog from the modal top layer, leaving it as a non-modal.
+     */
+    downgradeModal: function() {
+      if (!this.openAsModal_) { return; }
       this.openAsModal_ = false;
       this.dialog_.style.zIndex = '';
 
-      // This won't match the native <dialog> exactly because if the user set
-      // top on a centered polyfill dialog, that top gets thrown away when the
-      // dialog is closed. Not sure it's possible to polyfill this perfectly.
+      // This won't match the native <dialog> exactly because if the user set top on a centered
+      // polyfill dialog, that top gets thrown away when the dialog is closed. Not sure it's
+      // possible to polyfill this perfectly.
       if (this.replacedStyleTop_) {
         this.dialog_.style.top = '';
         this.replacedStyleTop_ = false;
       }
 
-      // Optimistically clear the modal part of this <dialog>.
-      if (this.backdrop_.parentElement) {
-        this.backdrop_.parentElement.removeChild(this.backdrop_);
-      }
+      // Clear the backdrop and remove from the manager.
+      this.backdrop_.parentNode && this.backdrop_.parentNode.removeChild(this.backdrop_);
       dialogPolyfill.dm.removeDialog(this);
     },
 
@@ -267,7 +279,7 @@
         throw new Error('Failed to execute \'showModal\' on dialog: There are too many open modal dialogs.');
       }
 
-      if (createsStackingContext(/** @type {Element} */ (this.dialog_.parentNode))) {
+      if (createsStackingContext(this.dialog_.parentElement)) {
         console.warn('A dialog is being shown inside a stacking context. ' +
             'This may cause it to be unusable. For more information, see this link: ' +
             'https://github.com/GoogleChrome/dialog-polyfill/#stacking-context');
@@ -401,6 +413,8 @@
     /** @type {!Array<!dialogPolyfillInfo>} */
     this.pendingDialogStack = [];
 
+    var checkDOM = this.checkDOM_.bind(this);
+
     // The overlay is used to simulate how a modal dialog blocks the document.
     // The blocking dialog is positioned on top of the overlay, and the rest of
     // the dialogs on the pending dialog stack are positioned below it. In the
@@ -410,8 +424,8 @@
     this.overlay.className = '_dialog_overlay';
     this.overlay.addEventListener('click', function(e) {
       e.stopPropagation();
-      this.checkDOM_();  // sanity-check DOM
-    }.bind(this));
+      checkDOM([]);  // sanity-check DOM
+    });
 
     this.handleKey_ = this.handleKey_.bind(this);
     this.handleFocus_ = this.handleFocus_.bind(this);
@@ -423,17 +437,21 @@
 
     if ('MutationObserver' in window) {
       this.mo_ = new MutationObserver(function(records) {
-        var valid = records.some(function(rec) {
+        var removed = [];
+        records.forEach(function(rec) {
           for (var i = 0, c; c = rec.removedNodes[i]; ++i) {
-            // is this removal a dialog, or contain a dialog?
-            if (c instanceof Element && (c.localName === 'dialog' || c.querySelector('dialog'))) {
-              return true;
+            if (!(c instanceof Element)) {
+              continue;
+            } else if (c.localName === 'dialog') {
+              removed.push(c);
+            } else {
+              var q = c.querySelector('dialog');
+              q && removed.push(q);
             }
           }
-          return false;
         });
-        valid && this.checkDOM_();
-      }.bind(this));
+        removed.length && checkDOM(removed);
+      });
     }
   };
 
@@ -452,20 +470,19 @@
    * dialogs are visible.
    */
   dialogPolyfill.DialogManager.prototype.unblockDocument = function() {
-    if (this.overlay.parentNode) {
-      this.overlay.parentNode.removeChild(this.overlay);
-    }
     document.documentElement.removeEventListener('focus', this.handleFocus_, true);
     document.removeEventListener('keydown', this.handleKey_);
     this.mo_ && this.mo_.disconnect();
   };
 
+  /**
+   * Updates the stacking of all known dialogs.
+   */
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
     var zIndex = this.zIndexHigh_;
 
     for (var i = 0, dpi; dpi = this.pendingDialogStack[i]; ++i) {
       dpi.updateZIndex(--zIndex, --zIndex);
-
       if (i === 0) {
         this.overlay.style.zIndex = --zIndex;
       }
@@ -473,8 +490,12 @@
 
     // Make the overlay a sibling of the dialog itself.
     var last = this.pendingDialogStack[0];
-    var p = last.dialog.parentNode || document.body;
-    p.appendChild(this.overlay);
+    if (last) {
+      var p = last.dialog.parentNode || document.body;
+      p.appendChild(this.overlay);
+    } else if (this.overlay.parentNode) {
+      this.overlay.parentNode.removeChild(this.overlay);
+    }
   };
 
   dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
@@ -519,12 +540,22 @@
   };
 
   /**
-   * Finds and removes any modal dialogs that are no longer on the page.
+   * Finds and downgrades any known modal dialogs that are no longer displayed. Dialogs that are
+   * removed and immediately readded don't stay modal, they become normal.
+   *
+   * @param {!Array<!HTMLDialogElement>} removed that have definitely been removed
    */
-  dialogPolyfill.DialogManager.prototype.checkDOM_ = function() {
+  dialogPolyfill.DialogManager.prototype.checkDOM_ = function(removed) {
+    // This operates on a clone because it may cause it to change. Each change also calls
+    // updateStacking, which only actually needs to happen once. But who removes many modal dialogs
+    // at a time?!
     var clone = this.pendingDialogStack.slice();
     clone.forEach(function(dpi) {
-      dpi.maybeHideModal();
+      if (removed.indexOf(dpi.dialog) !== -1) {
+        dpi.downgradeModal();
+      } else {
+        dpi.maybeHideModal();
+      }
     });
   };
 
@@ -554,9 +585,8 @@
     this.pendingDialogStack.splice(index, 1);
     if (this.pendingDialogStack.length === 0) {
       this.unblockDocument();
-    } else {
-      this.updateStacking();
     }
+    this.updateStacking();
   };
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
