@@ -540,8 +540,8 @@
   };
 
   /**
-   * Checks the state of known modal dialogs. Removes dialogs no longer on the page, and performs
-   * a stacking update, including repositioning backdrops.
+   * Finds and downgrades any known modal dialogs that are no longer displayed. Dialogs that are
+   * removed and immediately readded don't stay modal, they become normal.
    *
    * @param {!Array<!HTMLDialogElement>} removed that have definitely been removed
    */
