@@ -95,6 +95,11 @@
       dialog.setAttribute('role', 'dialog');
     }
 
+    // Set default tabindex: focusable but not in tab order.
+    if (!dialog.hasAttribute('tabindex')) {
+      dialog.setAttribute('tabindex', '-1');
+    }
+
     dialog.show = this.show.bind(this);
     dialog.showModal = this.showModal.bind(this);
     dialog.close = this.close.bind(this);
@@ -195,7 +200,7 @@
      * @param {!Event} e to redirect
      */
     backdropClick_: function(e) {
-      if (!this.dialog_.hasAttribute('tabindex')) {
+      if (!this.focus_()) {
         // Clicking on the backdrop should move the implicit cursor, even if dialog cannot be
         // focused. Create a fake thing to focus on. If the backdrop was _before_ the dialog, this
         // would not be needed - clicks would move the implicit cursor there.
@@ -204,8 +209,6 @@
         fake.tabIndex = -1;
         fake.focus();
         this.dialog_.removeChild(fake);
-      } else {
-        this.dialog_.focus();
       }
 
       var redirectedEvent = document.createEvent('MouseEvents');
@@ -217,28 +220,22 @@
     },
 
     /**
-     * Focuses on the first focusable element within the dialog. This will always blur the current
-     * focus, even if nothing within the dialog is found.
+     * Focus on the first autofocus element within the dialog, or focus on the dialog itself.
+     *
+     * @return {boolean} whether focus probably worked
      */
     focus_: function() {
-      // Find element with `autofocus` attribute, or fall back to the first form/tabindex control.
+      safeBlur(document.activeElement);
+      // Find element with `autofocus` attribute, or focus the dialog itself.
       var target = this.dialog_.querySelector('[autofocus]:not([disabled])');
-      if (!target && this.dialog_.tabIndex >= 0) {
+      if (!target) {
+        if (!this.dialog_.hasAttribute('tabindex')) {
+          return false;  // tabindex was removed for whatever reason
+        }
         target = this.dialog_;
       }
-      if (!target) {
-        // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
-        // alternative involves stepping through and trying to focus everything.
-        var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
-        var query = opts.map(function(el) {
-          return el + ':not([disabled])';
-        });
-        // TODO(samthor): tabindex values that are not numeric are not focusable.
-        query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
-        target = this.dialog_.querySelector(query.join(', '));
-      }
-      safeBlur(document.activeElement);
-      target && target.focus();
+      target.focus();
+      return true;
     },
 
     /**

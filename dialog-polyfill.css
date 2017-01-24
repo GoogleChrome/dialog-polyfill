@@ -15,6 +15,10 @@ dialog {
   display: none;
 }
 
+dialog:focus {
+  outline: none;
+}
+
 dialog[open] {
   display: block;
 }

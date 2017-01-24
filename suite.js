@@ -339,7 +339,7 @@ void function() {
     });
   });
 
-  suite('form focus', function() {
+  suite('focus', function() {
     test('non-modal inside modal is focusable', function() {
       var sub = createDialog();
       dialog.appendChild(sub);
@@ -354,7 +354,7 @@ void function() {
       input.focus();
       assert.equal(input, document.activeElement);
     });
-    test('clear focus when nothing focusable in modal', function() {
+    test('focus on dialog by default', function() {
       var input = cleanup(document.createElement('input'));
       input.type = 'text';
       document.body.appendChild(input);
@@ -362,40 +362,31 @@ void function() {
 
       var previous = document.activeElement;
       dialog.showModal();
-      assert.notEqual(previous, document.activeElement);
+      assert.equal(dialog, document.activeElement);
     });
-    test('default focus on modal', function() {
+    test('focus on autofocus element', function() {
       var input = cleanup(document.createElement('input'));
       input.type = 'text';
       dialog.appendChild(input);
 
       var anotherInput = cleanup(document.createElement('input'));
       anotherInput.type = 'text';
+      anotherInput.autofocus = true;
       dialog.appendChild(anotherInput);
 
       dialog.showModal();
-      assert.equal(document.activeElement, input);
-    });
-    test('default focus on non-modal', function() {
-      var div = cleanup(document.createElement('div'));
-      div.tabIndex = 4;
-      dialog.appendChild(div);
+      assert.equal(document.activeElement, anotherInput);
+      dialog.close();
 
+      // repeat with non-modal
+      document.activeElement && document.activeElement.blur();
       dialog.show();
-      assert.equal(document.activeElement, div);
+      assert.equal(document.activeElement, anotherInput);
+      dialog.close();
     });
-    test('autofocus element chosen', function() {
-      var input = cleanup(document.createElement('input'));
-      input.type = 'text';
-      dialog.appendChild(input);
-
-      var inputAF = cleanup(document.createElement('input'));
-      inputAF.type = 'text';
-      inputAF.autofocus = true;
-      dialog.appendChild(inputAF);
-
-      dialog.showModal();
-      assert.equal(document.activeElement, inputAF);
+    test('setting open does not trigger focus', function() {
+      dialog.open = true;
+      assert.notEqual(document.activeElement, dialog);
     });
     test('child modal dialog', function() {
       dialog.showModal();
