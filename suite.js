@@ -148,6 +148,15 @@ void function() {
       dialog.setAttribute('open', '');
       assert.isTrue(dialog.open, 'attribute opens dialog');
     });
+    test('changing open to dummy value is ignored', function() {
+      dialog.showModal();
+
+      dialog.setAttribute('open', 'dummy, ignored');
+      assert.isTrue(dialog.open, 'dialog open with dummy open value');
+
+      var overlay = document.querySelector('._dialog_overlay');
+      assert(overlay, 'dialog is still modal');
+    });
     test('show/showModal outside document', function() {
       dialog.open = false;
       dialog.parentNode.removeChild(dialog);
