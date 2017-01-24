@@ -498,16 +498,31 @@
     }
   };
 
+  /**
+   * @param {Element} candidate to check if contained or is the top-most modal dialog
+   * @return {boolean} whether candidate is contained in top dialog
+   */
+  dialogPolyfill.DialogManager.prototype.containedByTopDialog_ = function(candidate) {
+    while (candidate = findNearestDialog(candidate)) {
+      for (var i = 0, dpi; dpi = this.pendingDialogStack[i]; ++i) {
+        if (dpi.dialog === candidate) {
+          return i === 0;  // only valid if top-most
+        }
+      }
+      candidate = candidate.parentElement;
+    }
+    return false;
+  };
+
   dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
-    var candidate = findNearestDialog(/** @type {Element} */ (event.target));
-    var dpi = this.pendingDialogStack[0];
-    if (!dpi || candidate === dpi.dialog) { return; }
+    if (this.containedByTopDialog_(event.target)) { return; }
 
     event.preventDefault();
     event.stopPropagation();
     safeBlur(/** @type {Element} */ (event.target));
 
-    var position = dpi.dialog.compareDocumentPosition(event.target);
+    var dialog = this.pendingDialogStack[0].dialog;
+    var position = dialog.compareDocumentPosition(event.target);
     if (position & Node.DOCUMENT_POSITION_PRECEDING) {
       if (this.forwardTab_) {
         dpi.focus_();

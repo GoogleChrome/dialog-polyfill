@@ -340,6 +340,20 @@ void function() {
   });
 
   suite('form focus', function() {
+    test('non-modal inside modal is focusable', function() {
+      var sub = createDialog();
+      dialog.appendChild(sub);
+
+      var input = document.createElement('input');
+      input.type = 'text';
+      sub.appendChild(input);
+
+      dialog.showModal();
+      sub.show();
+
+      input.focus();
+      assert.equal(input, document.activeElement);
+    });
     test('clear focus when nothing focusable in modal', function() {
       var input = cleanup(document.createElement('input'));
       input.type = 'text';
@@ -419,9 +433,9 @@ void function() {
       input.type = 'text';
       dialog.appendChild(input);
 
-      assert.equal(document.documentElement.scrollTop, 0);
+      var prev = document.documentElement.scrollTop;
       dialog.showModal();
-      assert.equal(document.documentElement.scrollTop, 0);
+      assert.equal(document.documentElement.scrollTop, prev);
     });
   });
 
