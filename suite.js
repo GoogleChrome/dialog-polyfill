@@ -683,4 +683,18 @@ void function() {
     });
   });
 
+  suite('press tab key', function() {
+    test('tab key', function() {
+      var dialog = createDialog();
+      dialog.showModal();
+
+      document.documentElement.dispatchEvent(createKeyboardEvent(9))
+
+      var ev = document.createEvent('Events');
+      ev.initEvent('focus', true, true);
+      document.documentElement.dispatchEvent(ev);
+
+      dialog.close();
+    });
+  });
 }();
