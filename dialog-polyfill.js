@@ -423,9 +423,10 @@
     this.overlay = document.createElement('div');
     this.overlay.className = '_dialog_overlay';
     this.overlay.addEventListener('click', function(e) {
+      this.forwardTab_ = undefined;
       e.stopPropagation();
       checkDOM([]);  // sanity-check DOM
-    });
+    }.bind(this));
 
     this.handleKey_ = this.handleKey_.bind(this);
     this.handleFocus_ = this.handleFocus_.bind(this);
@@ -521,13 +522,15 @@
     event.stopPropagation();
     safeBlur(/** @type {Element} */ (event.target));
 
+    if (this.forwardTab_ === undefined) { return; }  // move focus only from a tab key
+
     var dpi = this.pendingDialogStack[0];
     var dialog = dpi.dialog;
     var position = dialog.compareDocumentPosition(event.target);
     if (position & Node.DOCUMENT_POSITION_PRECEDING) {
       if (this.forwardTab_) {
         dpi.focus_();
-      } else {
+      } else if (this.forwardTab_) {
         document.documentElement.focus();
       }
     } else {
