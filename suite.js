@@ -688,7 +688,7 @@ void function() {
       var dialog = createDialog();
       dialog.showModal();
 
-      document.documentElement.dispatchEvent(createKeyboardEvent(9))
+      document.documentElement.dispatchEvent(createKeyboardEvent(9));
 
       var ev = document.createEvent('Events');
       ev.initEvent('focus', true, true);

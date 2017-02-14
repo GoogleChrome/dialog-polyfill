@@ -521,7 +521,7 @@
     event.stopPropagation();
     safeBlur(/** @type {Element} */ (event.target));
 
-    var dpi = this.pendingDialogStack[0]
+    var dpi = this.pendingDialogStack[0];
     var dialog = dpi.dialog;
     var position = dialog.compareDocumentPosition(event.target);
     if (position & Node.DOCUMENT_POSITION_PRECEDING) {
