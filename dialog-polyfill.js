@@ -528,9 +528,9 @@
     var dialog = dpi.dialog;
     var position = dialog.compareDocumentPosition(event.target);
     if (position & Node.DOCUMENT_POSITION_PRECEDING) {
-      if (this.forwardTab_) {
+      if (this.forwardTab_) {  // forward
         dpi.focus_();
-      } else if (this.forwardTab_) {
+      } else {  // backwards
         document.documentElement.focus();
       }
     } else {
