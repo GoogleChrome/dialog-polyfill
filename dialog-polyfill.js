@@ -1,4 +1,6 @@
 (function() {
+  // from https://gist.github.com/samthor/7b307408e73784971ef0fcf4a8af6edd
+  var shadowFocusHandler=function(){function e(a,f){for(var b=a;!(a instanceof ShadowRoot);){if(!a)return;a=a.parentNode}if(!d.has(a)){d.add(a);var c=a.host,g=function(a){a.target!==b&&(b=a.target,f(a))},h=function(b){c.removeEventListener("blur",h,!1);a.removeEventListener("focusin",g,!0);d["delete"](a)};c.addEventListener("blur",h,!1);a.addEventListener("focusin",g,!0);e(a.host,f)}}function b(a){a=(a.composedPath?a.composedPath()[0]:null)||a.target;e(a,b);c(a)}var c=function(a){var b=new CustomEvent("-shadow-focus",{composed:!0,bubbles:!0,detail:a});a.dispatchEvent(b)};if(!window.WeakSet||!window.ShadowRoot)return function(a){return c(a.target)};var d=new WeakSet;return b}();
 
   // nb. This is for IE10 and lower _only_.
   var supportCustomEvent = window.CustomEvent;
@@ -33,13 +35,13 @@
           s.webkitOverflowScrolling === 'touch') {
         return true;
       }
-      el = el.parentElement;
+      el = el.assignedSlot || el.parentNode || el.host;
     }
     return false;
   }
 
   /**
-   * Finds the nearest <dialog> from the passed element.
+   * Finds the nearest <dialog> from the passed element, including inside shadow roots.
    *
    * @param {Element} el to search from
    * @return {HTMLDialogElement} dialog found
@@ -49,7 +51,7 @@
       if (el.localName === 'dialog') {
         return /** @type {HTMLDialogElement} */ (el);
       }
-      el = el.parentElement;
+      el = el.assignedSlot || el.parentNode || el.host;
     }
     return null;
   }
@@ -145,13 +147,17 @@
       return this.dialog_;
     },
 
+    get connected_() {
+      return document.body.contains(this.dialog_) || !!this.dialog_.isConnected;
+    },
+
     /**
      * Maybe remove this dialog from the modal top layer. This is called when
      * a modal dialog may no longer be tenable, e.g., when the dialog is no
      * longer open or is no longer part of the DOM.
      */
     maybeHideModal: function() {
-      if (this.dialog_.hasAttribute('open') && document.body.contains(this.dialog_)) { return; }
+      if (this.dialog_.hasAttribute('open') && this.connected_) { return; }
       this.downgradeModal();
     },
 
@@ -272,7 +278,7 @@
       if (this.dialog_.hasAttribute('open')) {
         throw new Error('Failed to execute \'showModal\' on dialog: The element is already open, and therefore cannot be opened modally.');
       }
-      if (!document.body.contains(this.dialog_)) {
+      if (!this.connected_) {
         throw new Error('Failed to execute \'showModal\' on dialog: The element is not in a Document.');
       }
       if (!dialogPolyfill.dm.pushDialog(this)) {
@@ -461,7 +467,8 @@
    * handlers.
    */
   dialogPolyfill.DialogManager.prototype.blockDocument = function() {
-    document.documentElement.addEventListener('focus', this.handleFocus_, true);
+    document.documentElement.addEventListener('focus', shadowFocusHandler, true);
+    document.documentElement.addEventListener('-shadow-focus', this.handleFocus_, true);
     document.addEventListener('keydown', this.handleKey_);
     this.mo_ && this.mo_.observe(document, {childList: true, subtree: true});
   };
@@ -471,7 +478,8 @@
    * dialogs are visible.
    */
   dialogPolyfill.DialogManager.prototype.unblockDocument = function() {
-    document.documentElement.removeEventListener('focus', this.handleFocus_, true);
+    document.documentElement.removeEventListener('focus', shadowFocusHandler, true);
+    document.documentElement.removeEventListener('-shadow-focus', this.handleFocus_, true);
     document.removeEventListener('keydown', this.handleKey_);
     this.mo_ && this.mo_.disconnect();
   };
@@ -510,24 +518,27 @@
           return i === 0;  // only valid if top-most
         }
       }
-      candidate = candidate.parentElement;
+      candidate = candidate.parentNode;
     }
     return false;
   };
 
   dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
-    if (this.containedByTopDialog_(event.target)) { return; }
+    const target = event.detail || event.target;
+    if (this.containedByTopDialog_(target)) { return; }
 
     event.preventDefault();
     event.stopPropagation();
-    safeBlur(/** @type {Element} */ (event.target));
+    safeBlur(/** @type {Element} */ (target));
 
     if (this.forwardTab_ === undefined) { return; }  // move focus only from a tab key
 
     var dpi = this.pendingDialogStack[0];
     var dialog = dpi.dialog;
-    var position = dialog.compareDocumentPosition(event.target);
-    if (position & Node.DOCUMENT_POSITION_PRECEDING) {
+    var position = dialog.compareDocumentPosition(target);
+    if (position & Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC) {
+      // used for Shadow DOM, ignore for now
+    } else if (position & Node.DOCUMENT_POSITION_PRECEDING) {
       if (this.forwardTab_) {  // forward
         dpi.focus_();
       } else {  // backwards

@@ -49,7 +49,7 @@ void function() {
   /**
    * Cleans up any passed DOM elements.
    *
-   * @param {!Element} el to clean up
+   * @param {(!Element|string)} el to clean up, or created element with string name
    * @return {!Element} the same element, for chaining
    */
   var cleanup = (function() {
@@ -65,6 +65,9 @@ void function() {
     });
 
     return function(el) {
+      if (typeof el === 'string') {
+        el = document.createElement(el);
+      }
       e.push(el);
       return el;
     };
@@ -682,6 +685,60 @@ void function() {
       assert.notOk(front.style.zIndex, 'modal close should clear zindex');
     });
   });
+
+  if (document.body.attachShadow) {
+    suite('shadow DOM', function() {
+      test('focus inside shadow root', function() {
+        var div = cleanup('div');
+        document.body.appendChild(div);
+
+        var root = div.attachShadow({mode: 'open'});
+        root.appendChild(dialog);
+
+        dialog.showModal();
+        var input = document.createElement('input');
+        input.placeholder = '::shadow > dialog > input';
+        dialog.appendChild(input);
+
+        var outsideDialogInput = document.createElement('input');
+        outsideDialogInput.placeholder = '::shadow > input';
+        root.appendChild(outsideDialogInput);
+
+        input.focus();
+        assert.equal(document.activeElement, div, 'document should point at div');
+        assert.equal(root.activeElement, input, 'within root, input should be active');
+
+        outsideDialogInput.focus();
+        assert.notEqual(root.activeElement, outsideDialogInput, 'non-dialog input shouldn\'t be focused');
+        assert.notEqual(root.activeElement, input, 'previous input should not be focused');
+        assert.notEqual(document.activeElement, div);
+      });
+
+      test('focus inside slot', function() {
+        var div = cleanup('div');
+        document.body.appendChild(div);
+
+        var root = div.attachShadow({mode: 'open'});
+        root.appendChild(dialog);
+        dialog.innerHTML = '<slot></slot>';
+
+        dialog.showModal();
+
+        var input = document.createElement('input');
+        div.appendChild(input);  // append to light DOM
+        input.focus();
+
+        assert.equal(document.activeElement, input, 'document should point at input');
+        assert.equal(root.activeElement, null, 'root should not be active');
+
+        var otherInput = cleanup('input');
+        document.body.appendChild(otherInput);
+        otherInput.focus();
+        assert.notEqual(document.activeElement, input, 'inner input should blur');
+      });
+    });
+  }
+
 
   suite('press tab key', function() {
     test('tab key', function() {
