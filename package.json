@@ -7,7 +7,13 @@
     "type": "git",
     "url": "https://github.com/GoogleChrome/dialog-polyfill.git"
   },
+  "scripts": {
+    "install": "bower install"
+  },
   "author": "The Chromium Authors",
   "license": "BSD",
-  "homepage": "https://github.com/GoogleChrome/dialog-polyfill"
+  "homepage": "https://github.com/GoogleChrome/dialog-polyfill",
+  "devDependencies": {
+    "bower": "^1.5.2"
+  }
 }
