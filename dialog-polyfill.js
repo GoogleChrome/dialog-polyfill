@@ -641,6 +641,20 @@
   });
 
   /**
+   * Replace the native HTMLFormElement.submit() method, as it won't fire the
+   * submit event and give us a chance to respond.
+   */
+  var nativeFormSubmit = HTMLFormElement.prototype.submit;
+  function replacementFormSubmit() {
+    if (!isFormMethodDialog(this)) {
+      return nativeFormSubmit.apply(this);
+    }
+    var dialog = findNearestDialog(this);
+    dialog && dialog.close();
+  }
+  HTMLFormElement.prototype.submit = replacementFormSubmit;
+
+  /**
    * Global form 'dialog' method handler. Closes a dialog correctly on submit
    * and possibly sets its return value.
    */
