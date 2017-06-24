@@ -398,7 +398,7 @@
    * @param {!Element} element to force upgrade
    */
   dialogPolyfill.forceRegisterDialog = function(element) {
-    if (element.showModal) {
+    if (window.HTMLDialogElement || element.showModal) {
       console.warn('This browser already supports <dialog>, the polyfill ' +
           'may not work correctly', element);
     }
@@ -623,52 +623,59 @@
   dialogPolyfill.formSubmitter = null;
 
   /**
-   * Global 'click' handler, to capture the <input type="submit"> or <button> element which has
-   * submitted a <form method="dialog">. Needed as Safari and others don't report this inside
-   * document.activeElement.
+   * Installs global handlers, such as click listers and native method overrides. These are needed
+   * even if a no dialog is registered, as they deal with <form method="dialog">.
    */
-  document.addEventListener('click', function(ev) {
-    if (ev.defaultPrevented) { return; }  // e.g. a button/submit which prevents default submission
+  if (window.HTMLDialogElement === undefined) {
 
-    var target = /** @type {Element} */ (ev.target);
-    if (!target || !isFormMethodDialog(target.form)) { return; }
-    if (target.type !== 'submit' || ['button', 'input'].indexOf(target.localName) === -1) { return; }
+    /**
+     * Global 'click' handler, to capture the <input type="submit"> or <button> element which has
+     * submitted a <form method="dialog">. Needed as Safari and others don't report this inside
+     * document.activeElement.
+     */
+    document.addEventListener('click', function(ev) {
+      if (ev.defaultPrevented) { return; }  // e.g. a submit which prevents default submission
 
-    var dialog = findNearestDialog(target);
-    if (!dialog) { return; }
+      var target = /** @type {Element} */ (ev.target);
+      if (!target || !isFormMethodDialog(target.form)) { return; }
+      if (target.type !== 'submit' || ['button', 'input'].indexOf(target.localName) === -1) { return; }
 
-    dialogPolyfill.formSubmitter = target;
-  });
+      var dialog = findNearestDialog(target);
+      if (!dialog) { return; }
 
-  /**
-   * Replace the native HTMLFormElement.submit() method, as it won't fire the
-   * submit event and give us a chance to respond.
-   */
-  var nativeFormSubmit = HTMLFormElement.prototype.submit;
-  function replacementFormSubmit() {
-    if (!isFormMethodDialog(this)) {
-      return nativeFormSubmit.apply(this);
+      dialogPolyfill.formSubmitter = target;
+    }, false);
+
+    /**
+     * Replace the native HTMLFormElement.submit() method, as it won't fire the
+     * submit event and give us a chance to respond.
+     */
+    var nativeFormSubmit = HTMLFormElement.prototype.submit;
+    function replacementFormSubmit() {
+      if (!isFormMethodDialog(this)) {
+        return nativeFormSubmit.apply(this);
+      }
+      var dialog = findNearestDialog(this);
+      dialog && dialog.close();
     }
-    var dialog = findNearestDialog(this);
-    dialog && dialog.close();
+    HTMLFormElement.prototype.submit = replacementFormSubmit;
+
+    /**
+     * Global form 'dialog' method handler. Closes a dialog correctly on submit
+     * and possibly sets its return value.
+     */
+    document.addEventListener('submit', function(ev) {
+      var form = /** @type {HTMLFormElement} */ (ev.target);
+      if (!isFormMethodDialog(form)) { return; }
+      ev.preventDefault();
+
+      var dialog = findNearestDialog(form);
+      if (!dialog) { return; }
+
+      var s = dialogPolyfill.formSubmitter;
+      dialog.close(s ? s.value : undefined);
+    }, true);
   }
-  HTMLFormElement.prototype.submit = replacementFormSubmit;
-
-  /**
-   * Global form 'dialog' method handler. Closes a dialog correctly on submit
-   * and possibly sets its return value.
-   */
-  document.addEventListener('submit', function(ev) {
-    var form = /** @type {HTMLFormElement} */ (ev.target);
-    if (!isFormMethodDialog(form)) { return; }
-    ev.preventDefault();
-
-    var dialog = findNearestDialog(form);
-    if (!dialog) { return; }
-
-    var returnValue = dialogPolyfill.formSubmitter ? dialogPolyfill.formSubmitter.value : undefined;
-    dialog.close(returnValue);
-  }, true);
 
   dialogPolyfill['forceRegisterDialog'] = dialogPolyfill.forceRegisterDialog;
   dialogPolyfill['registerDialog'] = dialogPolyfill.registerDialog;
