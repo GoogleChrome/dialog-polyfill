@@ -495,8 +495,8 @@ void function() {
       assert.isNotNull(overlay);
       assert.equal(overlay.parentNode, other.parentNode);
 
-      assert.isAbove(other.style.zIndex, overlay.style.zIndex, 'top-most dialog above overlay');
-      assert.isAbove(overlay.style.zIndex, dialog.style.zIndex, 'overlay above other dialogs');
+      assert.isAbove(+other.style.zIndex, +overlay.style.zIndex, 'top-most dialog above overlay');
+      assert.isAbove(+overlay.style.zIndex, +dialog.style.zIndex, 'overlay above other dialogs');
     });
   });
 
@@ -693,17 +693,17 @@ void function() {
       back.showModal();
       front.showModal();
 
-      var zf = window.getComputedStyle(front).zIndex;
-      var zb = window.getComputedStyle(back).zIndex;
+      var zf = +window.getComputedStyle(front).zIndex;
+      var zb = +window.getComputedStyle(back).zIndex;
       assert.isAbove(zf, zb, 'showModal order dictates z-index');
 
       var backBackdrop = back.nextElementSibling;
-      var zbb = window.getComputedStyle(backBackdrop).zIndex;
+      var zbb = +window.getComputedStyle(backBackdrop).zIndex;
       assert.equal(backBackdrop.className, 'backdrop');
       assert.isBelow(zbb, zb, 'backdrop below dialog');
 
       var frontBackdrop = front.nextElementSibling;
-      var zfb = window.getComputedStyle(frontBackdrop).zIndex
+      var zfb = +window.getComputedStyle(frontBackdrop).zIndex
       assert.equal(frontBackdrop.className, 'backdrop');
       assert.isBelow(zfb, zf,' backdrop below dialog');
 

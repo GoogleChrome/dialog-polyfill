@@ -388,9 +388,10 @@
     // WebKit/Blink, checking computedStyle.top == 'auto' is sufficient, but
     // Firefox returns the used value. So we do this crazy thing instead: check
     // the inline style and then go through CSS rules.
-    if ((dialog.style.top != 'auto' && dialog.style.top != '') ||
-        (dialog.style.bottom != 'auto' && dialog.style.bottom != ''))
+    if ((dialog.style.top !== 'auto' && dialog.style.top !== '') ||
+        (dialog.style.bottom !== 'auto' && dialog.style.bottom !== '')) {
       return false;
+    }
     return !dialogPolyfill.isInlinePositionSetByStylesheet(dialog);
   };
 
