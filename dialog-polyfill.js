@@ -82,11 +82,14 @@
   }
 
   /**
-   * @param {HTMLFormElement} form to check
+   * @param {HTMLFormElement} el to check
    * @return {boolean} whether this form has method="dialog"
    */
   function isFormMethodDialog(el) {
-    return el && el.hasAttribute('method') && el.getAttribute('method').toLowerCase() === 'dialog';
+    if (!el || !el.hasAttribute('method')) {
+      return false;
+    }
+    return el.getAttribute('method').toLowerCase() === 'dialog';
   }
 
   /**
@@ -642,7 +645,7 @@
    * and possibly sets its return value.
    */
   document.addEventListener('submit', function(ev) {
-    var form = /** {HTMLFormElement} */ ev.target;
+    var form = /** @type {HTMLFormElement} */ (ev.target);
     if (!isFormMethodDialog(form)) { return; }
     ev.preventDefault();
 
