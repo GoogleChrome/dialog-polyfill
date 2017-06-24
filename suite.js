@@ -604,18 +604,12 @@ void function() {
     test('dialog programmatic submit does not change returnValue', function() {
       var form = document.createElement('form');
       form.setAttribute('method', 'dialog');
+
+      dialog.returnValue = 'manually set';  // set before appending
       dialog.appendChild(form);
 
-      var button = document.createElement('button');
-      button.value = 'should not be this value';
-      form.appendChild(button);
-
-      dialog.returnValue = 'manually set';
-
       dialog.showModal();
-      button.click();
-      // FIXME: form.submit broken (see https://github.com/GoogleChrome/dialog-polyfill/issues/142)
-      // form.submit();
+      form.submit();
       assert.isFalse(dialog.open);
 
       assert.equal(dialog.returnValue, 'manually set', 'returnValue should not change');
