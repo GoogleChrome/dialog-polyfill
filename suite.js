@@ -583,6 +583,43 @@ void function() {
       assert.isFalse(dialog.open);
       assert.equal(dialog.returnValue, value);
     });
+    test('dialog with button preventDefault does not trigger submit', function() {
+      var form = document.createElement('form');
+      form.setAttribute('method', 'dialog');
+      dialog.appendChild(form);
+
+      var button = document.createElement('button');
+      button.value = 'does not matter';
+      form.appendChild(button);
+      button.addEventListener('click', function(ev) {
+        ev.preventDefault();
+      });
+
+      dialog.showModal();
+      button.click();
+
+      assert.isTrue(dialog.open, 'dialog should remain open');
+      assert.equal(dialog.returnValue, '');
+    });
+    test('dialog programmatic submit does not change returnValue', function() {
+      var form = document.createElement('form');
+      form.setAttribute('method', 'dialog');
+      dialog.appendChild(form);
+
+      var button = document.createElement('button');
+      button.value = 'should not be this value';
+      form.appendChild(button);
+
+      dialog.returnValue = 'manually set';
+
+      dialog.showModal();
+      button.click();
+      // FIXME: form.submit broken (see https://github.com/GoogleChrome/dialog-polyfill/issues/142)
+      // form.submit();
+      assert.isFalse(dialog.open);
+
+      assert.equal(dialog.returnValue, 'manually set', 'returnValue should not change');
+    });
     test('dialog method button', function() {
       var value = 'ExpectedValue' + Math.random();
 
@@ -602,7 +639,7 @@ void function() {
       assert.equal(dialog.returnValue, value);
 
       // Clear button value, confirm textContent is not used as value.
-      button.value = '';
+      button.value = 'blah blah';
       button.removeAttribute('value');
       button.textContent = value;
       dialog.show();

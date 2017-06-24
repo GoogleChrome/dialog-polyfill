@@ -82,6 +82,14 @@
   }
 
   /**
+   * @param {HTMLFormElement} form to check
+   * @return {boolean} whether this form has method="dialog"
+   */
+  function isFormMethodDialog(el) {
+    return el && el.hasAttribute('method') && el.getAttribute('method').toLowerCase() === 'dialog';
+  }
+
+  /**
    * @param {!HTMLDialogElement} dialog to upgrade
    * @constructor
    */
@@ -609,31 +617,39 @@
   };
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
+  dialogPolyfill.formSubmitter = null;
+
+  /**
+   * Global 'click' handler, to capture the <input type="submit"> or <button> element which has
+   * submitted a <form method="dialog">. Needed as Safari and others don't report this inside
+   * document.activeElement.
+   */
+  document.addEventListener('click', function(ev) {
+    if (ev.defaultPrevented) { return; }  // e.g. a button/submit which prevents default submission
+
+    var target = /** @type {Element} */ (ev.target);
+    if (!target || !isFormMethodDialog(target.form)) { return; }
+    if (target.type !== 'submit' || ['button', 'input'].indexOf(target.localName) === -1) { return; }
+
+    var dialog = findNearestDialog(target);
+    if (!dialog) { return; }
+
+    dialogPolyfill.formSubmitter = target;
+  });
 
   /**
    * Global form 'dialog' method handler. Closes a dialog correctly on submit
    * and possibly sets its return value.
    */
   document.addEventListener('submit', function(ev) {
-    var target = ev.target;
-    if (!target || !target.hasAttribute('method')) { return; }
-    if (target.getAttribute('method').toLowerCase() !== 'dialog') { return; }
+    var form = /** {HTMLFormElement} */ ev.target;
+    if (!isFormMethodDialog(form)) { return; }
     ev.preventDefault();
 
-    var dialog = findNearestDialog(/** @type {Element} */ (ev.target));
+    var dialog = findNearestDialog(form);
     if (!dialog) { return; }
 
-    // FIXME: The original event doesn't contain the element used to submit the
-    // form (if any). Look in some possible places.
-    var returnValue;
-    var cands = [document.activeElement, ev.explicitOriginalTarget];
-    var els = ['BUTTON', 'INPUT'];
-    cands.some(function(cand) {
-      if (cand && cand.form == ev.target && els.indexOf(cand.nodeName.toUpperCase()) != -1) {
-        returnValue = cand.value;
-        return true;
-      }
-    });
+    var returnValue = dialogPolyfill.formSubmitter ? dialogPolyfill.formSubmitter.value : undefined;
     dialog.close(returnValue);
   }, true);
 
