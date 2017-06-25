@@ -661,6 +661,34 @@ void function() {
       assert.isTrue(dialog.open, 'non-dialog form should not close dialog')
       assert(!dialog.returnValue);
     });
+    test('form submitter across dialogs', function() {
+      var form1 = document.createElement('form');
+      form1.setAttribute('method', 'dialog');
+      dialog.appendChild(form1);
+
+      var button1 = document.createElement('button');
+      button1.value = 'from form1: first value';
+      form1.appendChild(button1);
+      dialog.showModal();
+
+      var dialog2 = createDialog();
+      dialog2.returnValue = 'dialog2 default close value';
+      var form2 = document.createElement('form');
+      form2.setAttribute('method', 'dialog');
+      dialog2.appendChild(form2);
+      dialog2.showModal();
+
+      button1.click();
+      assert.isFalse(dialog.open);
+
+      // nb. this never fires 'submit' so the .returnValue can't be wrong: is there another way
+      // to submit a form that doesn't involve a click (enter implicitly 'clicks') or submit?
+      form2.submit();
+      assert.isFalse(dialog2.open);
+
+      assert.equal(dialog2.returnValue, 'dialog2 default close value',
+          'second dialog shouldn\'t reuse formSubmitter');
+    });
   });
 
   suite('order', function() {

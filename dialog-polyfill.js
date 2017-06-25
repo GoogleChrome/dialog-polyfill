@@ -673,8 +673,15 @@
       var dialog = findNearestDialog(form);
       if (!dialog) { return; }
 
+      // Forms can only be submitted via .submit() or a click (?), but anyway: sanity-check that
+      // the submitter is correct before using it value as .returnValue.
       var s = dialogPolyfill.formSubmitter;
-      dialog.close(s ? s.value : undefined);
+      if (s && s.form === form) {
+        dialog.close(s.value);
+      } else {
+        dialog.close();
+      }
+      dialogPolyfill.formSubmitter = null;
     }, true);
   }
 
