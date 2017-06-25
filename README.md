@@ -1,4 +1,4 @@
-dialog-polyfill.js is a polyfill for `<dialog>`.
+dialog-polyfill.js is a polyfill for `<dialog>` and `<form method="dialog">`.
 Check out [some demos](http://demo.agektmr.com/dialog/)!
 
 `<dialog>` is an element for a popup box in a web page, including a modal option which will make the rest of the page inert during use.
