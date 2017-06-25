@@ -622,6 +622,7 @@
 
   dialogPolyfill.dm = new dialogPolyfill.DialogManager();
   dialogPolyfill.formSubmitter = null;
+  dialogPolyfill.useValue = null;
 
   /**
    * Installs global handlers, such as click listers and native method overrides. These are needed
@@ -635,11 +636,19 @@
      * document.activeElement.
      */
     document.addEventListener('click', function(ev) {
+      dialogPolyfill.formSubmitter = null;
+      dialogPolyfill.useValue = null;
       if (ev.defaultPrevented) { return; }  // e.g. a submit which prevents default submission
 
       var target = /** @type {Element} */ (ev.target);
       if (!target || !isFormMethodDialog(target.form)) { return; }
-      if (target.type !== 'submit' || ['button', 'input'].indexOf(target.localName) === -1) { return; }
+
+      var valid = (target.type === 'submit' && ['button', 'input'].indexOf(target.localName) > -1);
+      if (!valid) {
+        if (!(target.localName === 'input' && target.type === 'image')) { return; }
+        // this is a <input type="image">, which can submit forms
+        dialogPolyfill.useValue = ev.offsetX + ',' + ev.offsetY;
+      }
 
       var dialog = findNearestDialog(target);
       if (!dialog) { return; }
@@ -674,10 +683,10 @@
       if (!dialog) { return; }
 
       // Forms can only be submitted via .submit() or a click (?), but anyway: sanity-check that
-      // the submitter is correct before using it value as .returnValue.
+      // the submitter is correct before using its value as .returnValue.
       var s = dialogPolyfill.formSubmitter;
       if (s && s.form === form) {
-        dialog.close(s.value);
+        dialog.close(dialogPolyfill.useValue || s.value);
       } else {
         dialog.close();
       }
