@@ -661,6 +661,22 @@ void function() {
       assert.isTrue(dialog.open, 'non-dialog form should not close dialog')
       assert(!dialog.returnValue);
     });
+    test('type="image" submitter', function() {
+      var form = document.createElement('form');
+      form.setAttribute('method', 'dialog');
+      dialog.appendChild(form);
+      dialog.show();
+
+      var image = document.createElement('input');
+      image.type = 'image';
+      image.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+      image.setAttribute('value', 'image should not accept value');
+      form.appendChild(image);
+      image.click();
+
+      assert.notEqual(image.getAttribute('value'), dialog.returnValue);
+      assert.equal(dialog.returnValue, '0,0');
+    });
     test('form submitter across dialogs', function() {
       var form1 = document.createElement('form');
       form1.setAttribute('method', 'dialog');
