@@ -559,6 +559,15 @@ void function() {
   });
 
   suite('form', function() {
+    test('method attribute is translated to property', function() {
+      var form = document.createElement('form');
+      form.method = 'dialog';
+      assert.equal(form.method, 'dialog');
+
+      form.method = 'PoSt';
+      assert.equal(form.method, 'post');
+      assert.equal(form.getAttribute('method'), 'PoSt');
+    });
     test('dialog method input', function() {
       var value = 'ExpectedValue' + Math.random();
 

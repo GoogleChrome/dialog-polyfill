@@ -631,6 +631,31 @@
   if (window.HTMLDialogElement === undefined) {
 
     /**
+     * If HTMLFormElement translates method="DIALOG" into 'get', then replace the descriptor with
+     * one that returns the correct value.
+     */
+    var testForm = document.createElement('form');
+    testForm.setAttribute('method', 'dialog');
+    if (testForm.method !== 'dialog') {
+      var methodDescriptor = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, 'method');
+      var realGet = methodDescriptor.get;
+      methodDescriptor.get = function() {
+        if (isFormMethodDialog(this)) {
+          return 'dialog';
+        }
+        return realGet.call(this);
+      };
+      var realSet = methodDescriptor.set;
+      methodDescriptor.set = function(v) {
+        if (typeof v === 'string' && v.toLowerCase() === 'dialog') {
+          return this.setAttribute('method', v);
+        }
+        return realSet.call(this, v);
+      };
+      Object.defineProperty(HTMLFormElement.prototype, 'method', methodDescriptor);
+    }
+
+    /**
      * Global 'click' handler, to capture the <input type="submit"> or <button> element which has
      * submitted a <form method="dialog">. Needed as Safari and others don't report this inside
      * document.activeElement.
@@ -663,7 +688,7 @@
     var nativeFormSubmit = HTMLFormElement.prototype.submit;
     function replacementFormSubmit() {
       if (!isFormMethodDialog(this)) {
-        return nativeFormSubmit.apply(this);
+        return nativeFormSubmit.call(this);
       }
       var dialog = findNearestDialog(this);
       dialog && dialog.close();
