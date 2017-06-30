@@ -457,10 +457,8 @@
               continue;
             } else if (c.localName === 'dialog') {
               removed.push(c);
-            } else {
-              var q = c.querySelector('dialog');
-              q && removed.push(q);
             }
+            removed = removed.concat(c.querySelectorAll('dialog'));
           }
         });
         removed.length && checkDOM(removed);
