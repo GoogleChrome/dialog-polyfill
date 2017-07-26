@@ -128,6 +128,7 @@
       }.bind(this);
       var timeout;
       var delayModel = function(ev) {
+        if (ev.target !== dialog) return; // Not for a child element
         var cand = 'DOMNodeRemoved';
         removed |= (ev.type.substr(0, cand.length) === cand);
         window.clearTimeout(timeout);
