@@ -2,7 +2,7 @@
 
   // nb. This is for IE10 and lower _only_.
   var supportCustomEvent = window.CustomEvent;
-  if (!supportCustomEvent || typeof supportCustomEvent == 'object') {
+  if (!supportCustomEvent || typeof supportCustomEvent === 'object') {
     supportCustomEvent = function CustomEvent(event, x) {
       x = x || {};
       var ev = document.createEvent('CustomEvent');
@@ -62,7 +62,7 @@
    * @param {Element} el to blur
    */
   function safeBlur(el) {
-    if (el && el.blur && el != document.body) {
+    if (el && el.blur && el !== document.body) {
       el.blur();
     }
   }
@@ -74,7 +74,7 @@
    */
   function inNodeList(nodeList, node) {
     for (var i = 0; i < nodeList.length; ++i) {
-      if (nodeList[i] == node) {
+      if (nodeList[i] === node) {
         return true;
       }
     }
@@ -128,7 +128,7 @@
       }.bind(this);
       var timeout;
       var delayModel = function(ev) {
-        if (ev.target !== dialog) return; // Not for a child element
+        if (ev.target !== dialog) { return; }  // not for a child element
         var cand = 'DOMNodeRemoved';
         removed |= (ev.type.substr(0, cand.length) === cand);
         window.clearTimeout(timeout);
@@ -371,7 +371,7 @@
         }
         var cssTop = rule.style.getPropertyValue('top');
         var cssBottom = rule.style.getPropertyValue('bottom');
-        if ((cssTop && cssTop != 'auto') || (cssBottom && cssBottom != 'auto')) {
+        if ((cssTop && cssTop !== 'auto') || (cssBottom && cssBottom !== 'auto')) {
           return true;
         }
       }
@@ -381,7 +381,7 @@
 
   dialogPolyfill.needsCentering = function(dialog) {
     var computedStyle = window.getComputedStyle(dialog);
-    if (computedStyle.position != 'absolute') {
+    if (computedStyle.position !== 'absolute') {
       return false;
     }
 
@@ -610,7 +610,7 @@
    */
   dialogPolyfill.DialogManager.prototype.removeDialog = function(dpi) {
     var index = this.pendingDialogStack.indexOf(dpi);
-    if (index == -1) { return; }
+    if (index === -1) { return; }
 
     this.pendingDialogStack.splice(index, 1);
     if (this.pendingDialogStack.length === 0) {
