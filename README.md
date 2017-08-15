@@ -90,3 +90,11 @@ dialog {
   transform: translate(0, -50%);
 }
 ```
+
+## Extensions
+
+### Focus
+
+The WAI-ARIA doc suggests returning focus to the previously focused element after a modal dialog is closed.
+However, this is not part of the dialog spec itself.
+See [this snippet](https://gist.github.com/samthor/babe9fad4a65625b301ba482dad284d1) to add this, even to the native `dialog`.
