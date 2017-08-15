@@ -638,7 +638,7 @@
     if (testForm.method !== 'dialog') {
       var methodDescriptor = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, 'method');
       if (methodDescriptor) {
-        // 'method' doesn't exist in old versions of PhantomJS, don't replace it
+        // TODO: older iOS and older PhantomJS fail to return the descriptor here
         var realGet = methodDescriptor.get;
         methodDescriptor.get = function() {
           if (isFormMethodDialog(this)) {
