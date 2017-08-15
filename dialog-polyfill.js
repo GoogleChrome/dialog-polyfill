@@ -637,21 +637,24 @@
     testForm.setAttribute('method', 'dialog');
     if (testForm.method !== 'dialog') {
       var methodDescriptor = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, 'method');
-      var realGet = methodDescriptor.get;
-      methodDescriptor.get = function() {
-        if (isFormMethodDialog(this)) {
-          return 'dialog';
-        }
-        return realGet.call(this);
-      };
-      var realSet = methodDescriptor.set;
-      methodDescriptor.set = function(v) {
-        if (typeof v === 'string' && v.toLowerCase() === 'dialog') {
-          return this.setAttribute('method', v);
-        }
-        return realSet.call(this, v);
-      };
-      Object.defineProperty(HTMLFormElement.prototype, 'method', methodDescriptor);
+      if (methodDescriptor) {
+        // 'method' doesn't exist in old versions of PhantomJS, don't replace it
+        var realGet = methodDescriptor.get;
+        methodDescriptor.get = function() {
+          if (isFormMethodDialog(this)) {
+            return 'dialog';
+          }
+          return realGet.call(this);
+        };
+        var realSet = methodDescriptor.set;
+        methodDescriptor.set = function(v) {
+          if (typeof v === 'string' && v.toLowerCase() === 'dialog') {
+            return this.setAttribute('method', v);
+          }
+          return realSet.call(this, v);
+        };
+        Object.defineProperty(HTMLFormElement.prototype, 'method', methodDescriptor);
+      }
     }
 
     /**
