@@ -689,13 +689,13 @@
      * submit event and give us a chance to respond.
      */
     var nativeFormSubmit = HTMLFormElement.prototype.submit;
-    function replacementFormSubmit() {
+    var replacementFormSubmit = function () {
       if (!isFormMethodDialog(this)) {
         return nativeFormSubmit.call(this);
       }
       var dialog = findNearestDialog(this);
       dialog && dialog.close();
-    }
+    };
     HTMLFormElement.prototype.submit = replacementFormSubmit;
 
     /**
