@@ -585,12 +585,18 @@ void function() {
       input.value = value;
       form.appendChild(input);
 
+      var closeCount = 0;
+      dialog.addEventListener('close', function() {
+        ++closeCount;
+      });
+
       dialog.show();
       input.focus();  // emulate user focus action
       input.click();
 
       assert.isFalse(dialog.open);
       assert.equal(dialog.returnValue, value);
+      assert.equal(closeCount, 1);
     });
     test('dialog with button preventDefault does not trigger submit', function() {
       var form = document.createElement('form');
