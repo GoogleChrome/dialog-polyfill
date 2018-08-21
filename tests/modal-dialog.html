@@ -1,11 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html tabindex="0">
 <meta charset='utf-8'>
 <head>
 <script src="../dialog-polyfill.js"></script>
 <meta name="viewport" content="width=device-width, user-scalable=no">
 <link rel="stylesheet" type="text/css" href="../dialog-polyfill.css">
 <style>
+  html {
+    border: 4px solid white;
+  }
+  html:focus {
+    border-color: red;
+  }
 dialog {
   width: 100px;
 }

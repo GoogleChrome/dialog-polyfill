@@ -529,6 +529,8 @@
   dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
     if (this.containedByTopDialog_(event.target)) { return; }
 
+    if (document.activeElement === document.documentElement) { return; }
+
     event.preventDefault();
     event.stopPropagation();
     safeBlur(/** @type {Element} */ (event.target));
@@ -539,9 +541,11 @@
     var dialog = dpi.dialog;
     var position = dialog.compareDocumentPosition(event.target);
     if (position & Node.DOCUMENT_POSITION_PRECEDING) {
-      if (this.forwardTab_) {  // forward
+      if (this.forwardTab_) {
+        // forward
         dpi.focus_();
-      } else {  // backwards
+      } else if (event.target !== document.documentElement) {
+        // backwards if we're not already focused on <html>
         document.documentElement.focus();
       }
     } else {
