@@ -39,6 +39,21 @@
   }
 
   /**
+   * Finds the shadow root, if it exists, of an element.
+   *
+   * @param {Element} element to search from
+   * @return {ShadowRoot} shadow root found
+   */
+  function findShadowRoot(element) {
+    if (typeof ShadowRoot === "undefined") return null;
+    if (element instanceof ShadowRoot) return element;
+    if (element.shadowRoot) return element.shadowRoot;
+    if (!element.parentNode) return null;
+
+    return findShadowRoot(element.parentNode);
+  }
+
+  /**
    * Finds the nearest <dialog> from the passed element.
    *
    * @param {Element} el to search from
@@ -100,6 +115,9 @@
     this.dialog_ = dialog;
     this.replacedStyleTop_ = false;
     this.openAsModal_ = false;
+
+    /* If the dialog is contained in a shadow root, make it the root in which to open it. Otherwise, the root is the document body */
+    this.root_ = findShadowRoot(dialog) || document.body;
 
     // Set a11y role. Browsers that support dialog implicitly know this already.
     if (!dialog.hasAttribute('role')) {
@@ -163,7 +181,7 @@
      * longer open or is no longer part of the DOM.
      */
     maybeHideModal: function() {
-      if (this.dialog_.hasAttribute('open') && document.body.contains(this.dialog_)) { return; }
+      if (this.dialog_.hasAttribute('open') && this.root_.contains(this.dialog_)) { return; }
       this.downgradeModal();
     },
 
@@ -284,8 +302,8 @@
       if (this.dialog_.hasAttribute('open')) {
         throw new Error('Failed to execute \'showModal\' on dialog: The element is already open, and therefore cannot be opened modally.');
       }
-      if (!document.body.contains(this.dialog_)) {
-        throw new Error('Failed to execute \'showModal\' on dialog: The element is not in a Document.');
+      if (!this.root_.contains(this.dialog_)) {
+        throw new Error('Failed to execute \'showModal\' on dialog: The element is not in a Document or in a shadow root.');
       }
       if (!dialogPolyfill.dm.pushDialog(this)) {
         throw new Error('Failed to execute \'showModal\' on dialog: There are too many open modal dialogs.');
