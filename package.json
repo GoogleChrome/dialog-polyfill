@@ -5,6 +5,7 @@
   "main": "dialog-polyfill.js",
   "types": "dialog-polyfill.d.ts",
   "files": [
+    "dialog-polyfill.css",
     "dialog-polyfill.d.ts"
   ],
   "repository": {
