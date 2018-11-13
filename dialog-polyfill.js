@@ -556,7 +556,9 @@
   };
 
   dialogPolyfill.DialogManager.prototype.handleKey_ = function(event) {
-    
+    if (event.defaultPrevented) {
+      return;
+    }
     this.forwardTab_ = undefined;
     if (event.keyCode === 27) {
       event.preventDefault();
