@@ -9,10 +9,26 @@ See the [HTML spec](https://html.spec.whatwg.org/multipage/forms.html#the-dialog
 
 ### Installation
 
-You may optionally install via NPM or Bower-
+You may optionally install via NPM -
 
     $ npm install dialog-polyfill
-    $ bower install dialog-polyfill
+
+
+There are 3 ways that you could include the dialog polyfill
+
+* include `dialog-polyfill.js` script directly in your HTML, which exposes a global `dialogPolyfill` function.
+* `import` (es modules)
+* `require` (commonjs/node)
+
+
+```javascript
+import dialogPolyfill from 'dialog-polyfill'  // modern es modules approach
+
+// *OR*
+
+const dialogPolyfill = require('dialog-polyfill') // commonjs/node approach
+```
+
 
 ### Supports
 
@@ -25,7 +41,7 @@ This polyfill works on modern versions of all major browsers. It also supports I
 3. Register the elements using `dialogPolyfill.registerDialog()`, passing it one node at a time. This polyfill won't replace native support.
 4. Use your `<dialog>` elements!
 
-## Example
+## Script Global Example
 
 ```html
 <head>
