@@ -1,5 +1,8 @@
-var dialogPolyfill = (function () {
-  'use strict';
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global = global || self, global.dialogPolyfill = factory());
+}(this, function () { 'use strict';
 
   // nb. This is for IE10 and lower _only_.
   var supportCustomEvent = window.CustomEvent;
@@ -729,4 +732,4 @@ var dialogPolyfill = (function () {
 
   return dialogPolyfill;
 
-}());
+}));
