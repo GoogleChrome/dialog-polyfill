@@ -3,7 +3,7 @@
   "version": "0.4.10",
   "description": "Polyfill for the dialog element",
   "main": "dialog-polyfill.js",
-  "module": "dialog-polyfill.esm.js",
+  "module": "index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/GoogleChrome/dialog-polyfill.git"
@@ -19,9 +19,8 @@
   },
   "scripts": {
     "build": "npm-run-all -p build:*",
-    "build:esm": "rollup index.js --file dialog-polyfill.esm.js --format esm",
     "build:umd": "rollup index.js --file dialog-polyfill.js --format umd --name dialogPolyfill",
     "prepublishOnly": "npm run build",
-    "test": "tap test/"
+    "test": "open test.html"
   }
 }
