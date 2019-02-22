@@ -22,11 +22,18 @@ There are 3 ways that you could include the dialog polyfill
 
 
 ```javascript
-import dialogPolyfill from 'dialog-polyfill'  // modern es modules approach
+// direct import (script module, deno)
+import dialogPolyfill from './node_modules/dialog-polyfill/dialog-polyfill.esm.js';
 
 // *OR*
 
-const dialogPolyfill = require('dialog-polyfill') // commonjs/node approach
+// modern es modules with rollup/webpack bundlers, and node via esm module
+import dialogPolyfill from 'dialog-polyfill'
+
+// *OR*
+
+// traditional commonjs/node and browserify bundler
+const dialogPolyfill = require('dialog-polyfill')
 ```
 
 

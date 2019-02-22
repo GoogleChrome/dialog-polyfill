@@ -1,4 +1,3 @@
-
 // nb. This is for IE10 and lower _only_.
 var supportCustomEvent = window.CustomEvent;
 if (!supportCustomEvent || typeof supportCustomEvent === 'object') {
@@ -21,7 +20,6 @@ function createsStackingContext(el) {
     var invalid = function(k, ok) {
       return !(s[k] === undefined || s[k] === ok);
     };
-    
     if (s.opacity < 1 ||
         invalid('zIndex', 'auto') ||
         invalid('transform', 'none') ||
@@ -548,8 +546,6 @@ dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
       // backwards if we're not already focused on <html>
       document.documentElement.focus();
     }
-  } else {
-    // TODO: Focus after the dialog, is ignored.
   }
 
   return false;
@@ -727,6 +723,5 @@ if (window.HTMLDialogElement === undefined) {
 
   }, true);
 }
-
 
 export default dialogPolyfill;
