@@ -20,8 +20,8 @@
   "scripts": {
     "build": "npm-run-all -p build:*",
     "build:css": "cp dialog-polyfill.css dist/dialog-polyfill.css",
-    "build:esm": "rollup index.js --file dist/dialog-polyfill.js --format umd --name dialogPolyfill",
-    "build:umd": "rollup index.js --file dist/dialog-polyfill.esm.js --format esm",
+    "build:esm": "rollup index.js --file dist/dialog-polyfill.esm.js --format esm",
+    "build:umd": "rollup index.js --file dist/dialog-polyfill.js --format umd --name dialogPolyfill",
     "prepublishOnly": "npm run build",
     "test": "open test.html"
   }
