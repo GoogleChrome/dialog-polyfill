@@ -1,4 +1,8 @@
-(function() {
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global = global || self, global.dialogPolyfill = factory());
+}(this, function () { 'use strict';
 
   // nb. This is for IE10 and lower _only_.
   var supportCustomEvent = window.CustomEvent;
@@ -21,7 +25,8 @@
       var s = window.getComputedStyle(el);
       var invalid = function(k, ok) {
         return !(s[k] === undefined || s[k] === ok);
-      }
+      };
+      
       if (s.opacity < 1 ||
           invalid('zIndex', 'auto') ||
           invalid('transform', 'none') ||
@@ -548,8 +553,6 @@
         // backwards if we're not already focused on <html>
         document.documentElement.focus();
       }
-    } else {
-      // TODO: Focus after the dialog, is ignored.
     }
 
     return false;
@@ -686,6 +689,7 @@
       if (!dialog) { return; }
 
       dialogPolyfill.formSubmitter = target;
+
     }, false);
 
     /**
@@ -723,20 +727,10 @@
         dialog.close();
       }
       dialogPolyfill.formSubmitter = null;
+
     }, true);
   }
 
-  dialogPolyfill['forceRegisterDialog'] = dialogPolyfill.forceRegisterDialog;
-  dialogPolyfill['registerDialog'] = dialogPolyfill.registerDialog;
+  return dialogPolyfill;
 
-  if (typeof define === 'function' && 'amd' in define) {
-    // AMD support
-    define(function() { return dialogPolyfill; });
-  } else if (typeof module === 'object' && typeof module['exports'] === 'object') {
-    // CommonJS support
-    module['exports'] = dialogPolyfill;
-  } else {
-    // all others
-    window['dialogPolyfill'] = dialogPolyfill;
-  }
-})();
+}));

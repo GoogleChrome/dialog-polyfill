@@ -2,12 +2,27 @@
   "name": "dialog-polyfill",
   "version": "0.4.10",
   "description": "Polyfill for the dialog element",
-  "main": "dialog-polyfill.js",
+  "main": "dist/dialog-polyfill.js",
+  "module": "dist/dialog-polyfill.esm.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/GoogleChrome/dialog-polyfill.git"
   },
   "author": "The Chromium Authors",
   "license": "BSD",
-  "homepage": "https://github.com/GoogleChrome/dialog-polyfill"
+  "homepage": "https://github.com/GoogleChrome/dialog-polyfill",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^6.0.2",
+    "npm-run-all": "^4.1.5",
+    "rollup": "^1.3.0"
+  },
+  "scripts": {
+    "build": "npm-run-all -p build:*",
+    "build:css": "cp dialog-polyfill.css dist/dialog-polyfill.css",
+    "build:esm": "rollup index.js --file dist/dialog-polyfill.esm.js --format esm",
+    "build:umd": "rollup index.js --file dist/dialog-polyfill.js --format umd --name dialogPolyfill",
+    "prepublishOnly": "npm run build",
+    "test": "open test.html"
+  }
 }

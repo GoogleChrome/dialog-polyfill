@@ -9,10 +9,33 @@ See the [HTML spec](https://html.spec.whatwg.org/multipage/forms.html#the-dialog
 
 ### Installation
 
-You may optionally install via NPM or Bower-
+You may optionally install via NPM -
 
     $ npm install dialog-polyfill
-    $ bower install dialog-polyfill
+
+
+There are several ways that to include the dialog polyfill:
+
+* include `dialog-polyfill.js` script directly in your HTML, which exposes a global `dialogPolyfill` function.
+* `import` (es modules)
+* `require` (commonjs/node)
+
+
+```javascript
+// direct import (script module, deno)
+import dialogPolyfill from './node_modules/dialog-polyfill/index.js';
+
+// *OR*
+
+// modern es modules with rollup/webpack bundlers, and node via esm module
+import dialogPolyfill from 'dialog-polyfill'
+
+// *OR*
+
+// traditional commonjs/node and browserify bundler
+const dialogPolyfill = require('dialog-polyfill')
+```
+
 
 ### Supports
 
@@ -25,11 +48,11 @@ This polyfill works on modern versions of all major browsers. It also supports I
 3. Register the elements using `dialogPolyfill.registerDialog()`, passing it one node at a time. This polyfill won't replace native support.
 4. Use your `<dialog>` elements!
 
-## Example
+## Script Global Example
 
 ```html
 <head>
-  <link rel="stylesheet" type="text/css" href="dialog-polyfill.css" />
+  <link rel="stylesheet" type="text/css" href="dist/dialog-polyfill.css" />
 </head>
 <body>
   <dialog>
@@ -38,7 +61,7 @@ This polyfill works on modern versions of all major browsers. It also supports I
       <input type="submit" value="Close" />
     </form>
   </dialog>
-  <script src="dialog-polyfill.js"></script>
+  <script src="dist/dialog-polyfill.js"></script>
   <script>
     var dialog = document.querySelector('dialog');
     dialogPolyfill.registerDialog(dialog);
