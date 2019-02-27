@@ -52,7 +52,7 @@ This polyfill works on modern versions of all major browsers. It also supports I
 
 ```html
 <head>
-  <link rel="stylesheet" type="text/css" href="dialog-polyfill.css" />
+  <link rel="stylesheet" type="text/css" href="dist/dialog-polyfill.css" />
 </head>
 <body>
   <dialog>
