@@ -14,7 +14,7 @@ You may optionally install via NPM -
     $ npm install dialog-polyfill
 
 
-There are 3 ways that you could include the dialog polyfill
+There are several ways that to include the dialog polyfill:
 
 * include `dialog-polyfill.js` script directly in your HTML, which exposes a global `dialogPolyfill` function.
 * `import` (es modules)
@@ -23,7 +23,7 @@ There are 3 ways that you could include the dialog polyfill
 
 ```javascript
 // direct import (script module, deno)
-import dialogPolyfill from './node_modules/dialog-polyfill/dialog-polyfill.esm.js';
+import dialogPolyfill from './node_modules/dialog-polyfill/index.js';
 
 // *OR*
 
@@ -61,7 +61,7 @@ This polyfill works on modern versions of all major browsers. It also supports I
       <input type="submit" value="Close" />
     </form>
   </dialog>
-  <script src="dialog-polyfill.js"></script>
+  <script src="dist/dialog-polyfill.js"></script>
   <script>
     var dialog = document.querySelector('dialog');
     dialogPolyfill.registerDialog(dialog);

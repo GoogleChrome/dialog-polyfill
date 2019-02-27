@@ -20,6 +20,7 @@ function createsStackingContext(el) {
     var invalid = function(k, ok) {
       return !(s[k] === undefined || s[k] === ok);
     };
+    
     if (s.opacity < 1 ||
         invalid('zIndex', 'auto') ||
         invalid('transform', 'none') ||
