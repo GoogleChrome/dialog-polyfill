@@ -23,7 +23,7 @@ There are several ways that to include the dialog polyfill:
 
 ```javascript
 // direct import (script module, deno)
-import dialogPolyfill from './node_modules/dialog-polyfill/index.js';
+import dialogPolyfill from './node_modules/dialog-polyfill/dist/dialog-polyfill.esm.js';
 
 // *OR*
 
