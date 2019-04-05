@@ -93,6 +93,38 @@ function isFormMethodDialog(el) {
 }
 
 /**
+ * @param {!DocumentFragment|!Element} hostElement
+ * @return {?Element} 
+ */
+function findFocusableElementInShadowDom(hostElement) {
+  // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
+  // alternative involves stepping through and trying to focus everything.
+  var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
+  var query = opts.map(function(el) {
+    return el + ':not([disabled])';
+  });
+  // TODO(samthor): tabindex values that are not numeric are not focusable.
+  query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
+  target = hostElement.querySelector(query.join(', '));
+
+  if (!target) {
+    // If we haven't found a focusable target, see if the host element contains any custom elements.
+    // While any element can technically have a shadowRoot, custom elements are likely to.
+    // Recursively search for the first focusable item in shadow roots.
+    var elems = hostElement.querySelectorAll('*');
+    for (var i = 0; i < elems.length; i++) {
+      if (elems[i].tagName && elems[i].tagName.indexOf('-') > 0 && elems[i].shadowRoot) {
+        target = findFocusableElementInShadowDom(elems[i].shadowRoot);
+        if (target) {
+          break;
+        }
+      }
+    }
+  }
+  return target;
+}
+
+/**
  * @param {!HTMLDialogElement} dialog to upgrade
  * @constructor
  */
@@ -239,15 +271,7 @@ dialogPolyfillInfo.prototype = {
       target = this.dialog_;
     }
     if (!target) {
-      // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
-      // alternative involves stepping through and trying to focus everything.
-      var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
-      var query = opts.map(function(el) {
-        return el + ':not([disabled])';
-      });
-      // TODO(samthor): tabindex values that are not numeric are not focusable.
-      query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
-      target = this.dialog_.querySelector(query.join(', '));
+      target = findFocusableElementInShadowDom(this.dialog_);
     }
     safeBlur(document.activeElement);
     target && target.focus();
