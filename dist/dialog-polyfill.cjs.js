@@ -1,3 +1,5 @@
+'use strict';
+
 function styleInject(css, ref) {
   if ( ref === void 0 ) ref = {};
   var insertAt = ref.insertAt;
@@ -758,4 +760,4 @@ if (window.HTMLDialogElement === undefined) {
   }, true);
 }
 
-export default dialogPolyfill;
+module.exports = dialogPolyfill;

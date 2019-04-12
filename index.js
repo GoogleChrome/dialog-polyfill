@@ -1,3 +1,6 @@
+// inject the style into <head>
+import './dialog-polyfill.css';
+
 
 // nb. This is for IE10 and lower _only_.
 var supportCustomEvent = window.CustomEvent;

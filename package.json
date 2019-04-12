@@ -15,13 +15,11 @@
     "chai": "^4.2.0",
     "mocha": "^6.0.2",
     "npm-run-all": "^4.1.5",
-    "rollup": "^1.3.0"
+    "rollup": "^1.3.0",
+    "rollup-plugin-postcss": "^2.0.3"
   },
   "scripts": {
-    "build": "npm-run-all -p build:*",
-    "build:css": "cp dialog-polyfill.css dist/dialog-polyfill.css",
-    "build:esm": "rollup index.js --file dist/dialog-polyfill.esm.js --format esm",
-    "build:umd": "rollup index.js --file dist/dialog-polyfill.js --format umd --name dialogPolyfill",
+    "build": "rollup -c rollup.config.js",
     "prepublishOnly": "npm run build",
     "test": "open test.html"
   }
