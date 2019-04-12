@@ -36,6 +36,8 @@ import dialogPolyfill from 'dialog-polyfill'
 const dialogPolyfill = require('dialog-polyfill')
 ```
 
+Any of these inclusion methods will automatically inject css into `<head>`.
+
 
 ### Supports
 
