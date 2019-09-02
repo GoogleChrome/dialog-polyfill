@@ -342,7 +342,15 @@
         bubbles: false,
         cancelable: false
       });
+    
+      // If we have an onclose handler assigned and it's a function, call it
+      if(this.dialog_.onclose instanceof Function) {
+        this.dialog_.onclose(closeEvent);
+      }
+
+      // Dispatch the event as normal
       this.dialog_.dispatchEvent(closeEvent);
+
     }
 
   };
