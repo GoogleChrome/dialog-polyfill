@@ -598,6 +598,26 @@ void function() {
       assert.equal(dialog.returnValue, value);
       assert.equal(closeCount, 1);
     });
+    test('dialog with form submit preventDefault does not trigger close', function() {
+      var form = document.createElement('form');
+      form.setAttribute('method', 'dialog');
+      dialog.appendChild(form);
+
+      var input = document.createElement('input');
+      input.type = 'submit';
+      input.value = 'Does not matter';
+      form.appendChild(input);
+
+      form.addEventListener('submit', function(ev) {
+        ev.preventDefault();
+      });
+
+      dialog.showModal();
+      form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+
+      assert.isTrue(dialog.open, 'dialog should remain open');
+      assert.equal(dialog.returnValue, '');
+    });
     test('dialog with button preventDefault does not trigger submit', function() {
       var form = document.createElement('form');
       form.setAttribute('method', 'dialog');

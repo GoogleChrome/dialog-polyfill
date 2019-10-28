@@ -719,6 +719,8 @@
      * and possibly sets its return value.
      */
     document.addEventListener('submit', function(ev) {
+      if (ev.defaultPrevented) { return; }  // e.g. a submit which prevents default submission
+
       var form = /** @type {HTMLFormElement} */ (ev.target);
       if (!isFormMethodDialog(form)) { return; }
       ev.preventDefault();
@@ -736,7 +738,7 @@
       }
       dialogPolyfill.formSubmitter = null;
 
-    }, true);
+    }, false);
   }
 
   return dialogPolyfill;
