@@ -705,6 +705,8 @@ if (window.HTMLDialogElement === undefined) {
    * and possibly sets its return value.
    */
   document.addEventListener('submit', function(ev) {
+    if (ev.defaultPrevented) { return; }  // e.g. a submit which prevents default submission
+
     var form = /** @type {HTMLFormElement} */ (ev.target);
     if (!isFormMethodDialog(form)) { return; }
     ev.preventDefault();
@@ -722,7 +724,7 @@ if (window.HTMLDialogElement === undefined) {
     }
     dialogPolyfill.formSubmitter = null;
 
-  }, true);
+  }, false);
 }
 
 export default dialogPolyfill;
