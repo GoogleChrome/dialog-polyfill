@@ -110,7 +110,7 @@ function findFocusableElementInShadowDom(hostElement) {
   });
   // TODO(samthor): tabindex values that are not numeric are not focusable.
   query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
-  target = hostElement.querySelector(query.join(', '));
+  var target = hostElement.querySelector(query.join(', '));
 
   if (!target) {
     // If we haven't found a focusable target, see if the host element contains an element
@@ -188,7 +188,7 @@ function dialogPolyfillInfo(dialog) {
   this.backdrop_.addEventListener('click', this.backdropClick_.bind(this));
 }
 
-dialogPolyfillInfo.prototype = {
+dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
 
   get dialog() {
     return this.dialog_;
@@ -369,7 +369,7 @@ dialogPolyfillInfo.prototype = {
     this.dialog_.dispatchEvent(closeEvent);
   }
 
-};
+});
 
 var dialogPolyfill = {};
 
@@ -681,6 +681,7 @@ if (window.HTMLDialogElement === undefined) {
         return realGet.call(this);
       };
       var realSet = methodDescriptor.set;
+      /** @this {HTMLElement} */
       methodDescriptor.set = function(v) {
         if (typeof v === 'string' && v.toLowerCase() === 'dialog') {
           return this.setAttribute('method', v);
