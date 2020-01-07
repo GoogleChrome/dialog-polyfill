@@ -63,7 +63,7 @@ function findNearestDialog(el) {
  */
 function safeBlur(el) {
   // Find the actual focused element when the active element is inside a shadow root
-  while(el && el.shadowRoot && el.shadowRoot.activeElement) {
+  while (el && el.shadowRoot && el.shadowRoot.activeElement) {
     el = el.shadowRoot.activeElement;
   }
 
@@ -101,7 +101,7 @@ function isFormMethodDialog(el) {
  * @param {!DocumentFragment|!Element} hostElement
  * @return {?Element} 
  */
-function findFocusableElementInShadowDom(hostElement) {
+function findFocusableElementWithin(hostElement) {
   // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
   // alternative involves stepping through and trying to focus everything.
   var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
@@ -112,14 +112,14 @@ function findFocusableElementInShadowDom(hostElement) {
   query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
   var target = hostElement.querySelector(query.join(', '));
 
-  if (!target) {
+  if (!target && 'attachShadow' in Element.prototype) {
     // If we haven't found a focusable target, see if the host element contains an element
     // which has a shadowRoot.
     // Recursively search for the first focusable item in shadow roots.
     var elems = hostElement.querySelectorAll('*');
     for (var i = 0; i < elems.length; i++) {
       if (elems[i].tagName && elems[i].shadowRoot) {
-        target = findFocusableElementInShadowDom(elems[i].shadowRoot);
+        target = findFocusableElementWithin(elems[i].shadowRoot);
         if (target) {
           break;
         }
@@ -276,7 +276,7 @@ dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
       target = this.dialog_;
     }
     if (!target) {
-      target = findFocusableElementInShadowDom(this.dialog_);
+      target = findFocusableElementWithin(this.dialog_);
     }
     safeBlur(document.activeElement);
     target && target.focus();
