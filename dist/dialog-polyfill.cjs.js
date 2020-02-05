@@ -1,5 +1,36 @@
+'use strict';
+
+function styleInject(css, ref) {
+  if ( ref === void 0 ) ref = {};
+  var insertAt = ref.insertAt;
+
+  if (!css || typeof document === 'undefined') { return; }
+
+  var head = document.head || document.getElementsByTagName('head')[0];
+  var style = document.createElement('style');
+  style.type = 'text/css';
+
+  if (insertAt === 'top') {
+    if (head.firstChild) {
+      head.insertBefore(style, head.firstChild);
+    } else {
+      head.appendChild(style);
+    }
+  } else {
+    head.appendChild(style);
+  }
+
+  if (style.styleSheet) {
+    style.styleSheet.cssText = css;
+  } else {
+    style.appendChild(document.createTextNode(css));
+  }
+}
+
+var css = "dialog {\n  position: absolute;\n  left: 0; right: 0;\n  width: -moz-fit-content;\n  width: -webkit-fit-content;\n  width: fit-content;\n  height: -moz-fit-content;\n  height: -webkit-fit-content;\n  height: fit-content;\n  margin: auto;\n  border: solid;\n  padding: 1em;\n  background: white;\n  color: black;\n  display: block;\n}\n\ndialog:not([open]) {\n  display: none;\n}\n\ndialog + .backdrop {\n  position: fixed;\n  top: 0; right: 0; bottom: 0; left: 0;\n  background: rgba(0,0,0,0.1);\n}\n\n._dialog_overlay {\n  position: fixed;\n  top: 0; right: 0; bottom: 0; left: 0;\n}\n\ndialog.fixed {\n  position: fixed;\n  top: 50%;\n  transform: translate(0, -50%);\n}";
+styleInject(css);
+
 // inject the style into <head>
-import './dialog-polyfill.css';
 
 
 // nb. This is for IE10 and lower _only_.
@@ -65,11 +96,6 @@ function findNearestDialog(el) {
  * @param {Element} el to blur
  */
 function safeBlur(el) {
-  // Find the actual focused element when the active element is inside a shadow root
-  while (el && el.shadowRoot && el.shadowRoot.activeElement) {
-    el = el.shadowRoot.activeElement;
-  }
-
   if (el && el.blur && el !== document.body) {
     el.blur();
   }
@@ -98,38 +124,6 @@ function isFormMethodDialog(el) {
     return false;
   }
   return el.getAttribute('method').toLowerCase() === 'dialog';
-}
-
-/**
- * @param {!DocumentFragment|!Element} hostElement
- * @return {?Element} 
- */
-function findFocusableElementWithin(hostElement) {
-  // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
-  // alternative involves stepping through and trying to focus everything.
-  var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
-  var query = opts.map(function(el) {
-    return el + ':not([disabled])';
-  });
-  // TODO(samthor): tabindex values that are not numeric are not focusable.
-  query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
-  var target = hostElement.querySelector(query.join(', '));
-
-  if (!target && 'attachShadow' in Element.prototype) {
-    // If we haven't found a focusable target, see if the host element contains an element
-    // which has a shadowRoot.
-    // Recursively search for the first focusable item in shadow roots.
-    var elems = hostElement.querySelectorAll('*');
-    for (var i = 0; i < elems.length; i++) {
-      if (elems[i].tagName && elems[i].shadowRoot) {
-        target = findFocusableElementWithin(elems[i].shadowRoot);
-        if (target) {
-          break;
-        }
-      }
-    }
-  }
-  return target;
 }
 
 /**
@@ -191,7 +185,7 @@ function dialogPolyfillInfo(dialog) {
   this.backdrop_.addEventListener('click', this.backdropClick_.bind(this));
 }
 
-dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
+dialogPolyfillInfo.prototype = {
 
   get dialog() {
     return this.dialog_;
@@ -279,7 +273,15 @@ dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
       target = this.dialog_;
     }
     if (!target) {
-      target = findFocusableElementWithin(this.dialog_);
+      // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
+      // alternative involves stepping through and trying to focus everything.
+      var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
+      var query = opts.map(function(el) {
+        return el + ':not([disabled])';
+      });
+      // TODO(samthor): tabindex values that are not numeric are not focusable.
+      query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
+      target = this.dialog_.querySelector(query.join(', '));
     }
     safeBlur(document.activeElement);
     target && target.focus();
@@ -372,7 +374,7 @@ dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
     this.dialog_.dispatchEvent(closeEvent);
   }
 
-});
+};
 
 var dialogPolyfill = {};
 
@@ -580,8 +582,6 @@ dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
       // backwards if we're not already focused on <html>
       document.documentElement.focus();
     }
-  } else {
-    // TODO: Focus after the dialog, is ignored.
   }
 
   return false;
@@ -684,7 +684,6 @@ if (window.HTMLDialogElement === undefined) {
         return realGet.call(this);
       };
       var realSet = methodDescriptor.set;
-      /** @this {HTMLElement} */
       methodDescriptor.set = function(v) {
         if (typeof v === 'string' && v.toLowerCase() === 'dialog') {
           return this.setAttribute('method', v);
@@ -741,8 +740,6 @@ if (window.HTMLDialogElement === undefined) {
    * and possibly sets its return value.
    */
   document.addEventListener('submit', function(ev) {
-    if (ev.defaultPrevented) { return; }  // e.g. a submit which prevents default submission
-
     var form = /** @type {HTMLFormElement} */ (ev.target);
     if (!isFormMethodDialog(form)) { return; }
     ev.preventDefault();
@@ -760,8 +757,7 @@ if (window.HTMLDialogElement === undefined) {
     }
     dialogPolyfill.formSubmitter = null;
 
-  }, false);
+  }, true);
 }
 
-
-export default dialogPolyfill;
+module.exports = dialogPolyfill;

@@ -36,6 +36,8 @@ import dialogPolyfill from 'dialog-polyfill'
 const dialogPolyfill = require('dialog-polyfill')
 ```
 
+Any of these inclusion methods will automatically inject css into `<head>`.
+
 
 ### Supports
 
@@ -43,17 +45,13 @@ This polyfill works on modern versions of all major browsers. It also supports I
 
 ### Steps
 
-1. Include the CSS in the `<head>` of your document, and the Javascript anywhere before referencing `dialogPolyfill`.
-2. Create your dialog elements within the document. See [limitations](#limitations) for more details.
-3. Register the elements using `dialogPolyfill.registerDialog()`, passing it one node at a time. This polyfill won't replace native support.
-4. Use your `<dialog>` elements!
+1. Create your dialog elements within the document. See [limitations](#limitations) for more details.
+2. Register the elements using `dialogPolyfill.registerDialog()`, passing it one node at a time. This polyfill won't replace native support.
+3. Use your `<dialog>` elements!
 
 ## Script Global Example
 
 ```html
-<head>
-  <link rel="stylesheet" type="text/css" href="dist/dialog-polyfill.css" />
-</head>
 <body>
   <dialog>
     I'm a dialog!
