@@ -21,7 +21,7 @@ function createsStackingContext(el) {
     var invalid = function(k, ok) {
       return !(s[k] === undefined || s[k] === ok);
     };
-    
+
     if (s.opacity < 1 ||
         invalid('zIndex', 'auto') ||
         invalid('transform', 'none') ||
@@ -99,7 +99,7 @@ function isFormMethodDialog(el) {
 
 /**
  * @param {!DocumentFragment|!Element} hostElement
- * @return {?Element} 
+ * @return {?Element}
  */
 function findFocusableElementWithin(hostElement) {
   // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
@@ -127,6 +127,15 @@ function findFocusableElementWithin(hostElement) {
     }
   }
   return target;
+}
+
+/**
+ * Determines if an element is attached to the DOM.
+ * @param {Element} element to check
+ * @return {Boolean} whether the element is in DOM
+ */
+function isConnected(element) {
+  return element.isConnected || document.body.contains(element);
 }
 
 /**
@@ -200,7 +209,7 @@ dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
    * longer open or is no longer part of the DOM.
    */
   maybeHideModal: function() {
-    if (this.dialog_.hasAttribute('open') && document.body.contains(this.dialog_)) { return; }
+    if (this.dialog_.hasAttribute('open') && isConnected(this.dialog_)) { return; }
     this.downgradeModal();
   },
 
@@ -313,7 +322,7 @@ dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
     if (this.dialog_.hasAttribute('open')) {
       throw new Error('Failed to execute \'showModal\' on dialog: The element is already open, and therefore cannot be opened modally.');
     }
-    if (!document.body.contains(this.dialog_)) {
+    if (!isConnected(this.dialog_)) {
       throw new Error('Failed to execute \'showModal\' on dialog: The element is not in a Document.');
     }
     if (!dialogPolyfill.dm.pushDialog(this)) {

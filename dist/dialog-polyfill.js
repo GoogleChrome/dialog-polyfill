@@ -26,7 +26,7 @@
       var invalid = function(k, ok) {
         return !(s[k] === undefined || s[k] === ok);
       };
-      
+
       if (s.opacity < 1 ||
           invalid('zIndex', 'auto') ||
           invalid('transform', 'none') ||
@@ -67,6 +67,11 @@
    * @param {Element} el to blur
    */
   function safeBlur(el) {
+    // Find the actual focused element when the active element is inside a shadow root
+    while (el && el.shadowRoot && el.shadowRoot.activeElement) {
+      el = el.shadowRoot.activeElement;
+    }
+
     if (el && el.blur && el !== document.body) {
       el.blur();
     }
@@ -95,6 +100,47 @@
       return false;
     }
     return el.getAttribute('method').toLowerCase() === 'dialog';
+  }
+
+  /**
+   * @param {!DocumentFragment|!Element} hostElement
+   * @return {?Element}
+   */
+  function findFocusableElementWithin(hostElement) {
+    // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
+    // alternative involves stepping through and trying to focus everything.
+    var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
+    var query = opts.map(function(el) {
+      return el + ':not([disabled])';
+    });
+    // TODO(samthor): tabindex values that are not numeric are not focusable.
+    query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
+    var target = hostElement.querySelector(query.join(', '));
+
+    if (!target && 'attachShadow' in Element.prototype) {
+      // If we haven't found a focusable target, see if the host element contains an element
+      // which has a shadowRoot.
+      // Recursively search for the first focusable item in shadow roots.
+      var elems = hostElement.querySelectorAll('*');
+      for (var i = 0; i < elems.length; i++) {
+        if (elems[i].tagName && elems[i].shadowRoot) {
+          target = findFocusableElementWithin(elems[i].shadowRoot);
+          if (target) {
+            break;
+          }
+        }
+      }
+    }
+    return target;
+  }
+
+  /**
+   * Determines if an element is attached to the DOM.
+   * @param {Element} element to check
+   * @return {Boolean} whether the element is in DOM
+   */
+  function isConnected(element) {
+    return element.isConnected || document.body.contains(element);
   }
 
   /**
@@ -156,7 +202,7 @@
     this.backdrop_.addEventListener('click', this.backdropClick_.bind(this));
   }
 
-  dialogPolyfillInfo.prototype = {
+  dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
 
     get dialog() {
       return this.dialog_;
@@ -168,7 +214,7 @@
      * longer open or is no longer part of the DOM.
      */
     maybeHideModal: function() {
-      if (this.dialog_.hasAttribute('open') && document.body.contains(this.dialog_)) { return; }
+      if (this.dialog_.hasAttribute('open') && isConnected(this.dialog_)) { return; }
       this.downgradeModal();
     },
 
@@ -244,15 +290,7 @@
         target = this.dialog_;
       }
       if (!target) {
-        // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
-        // alternative involves stepping through and trying to focus everything.
-        var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
-        var query = opts.map(function(el) {
-          return el + ':not([disabled])';
-        });
-        // TODO(samthor): tabindex values that are not numeric are not focusable.
-        query.push('[tabindex]:not([disabled]):not([tabindex=""])');  // tabindex != "", not disabled
-        target = this.dialog_.querySelector(query.join(', '));
+        target = findFocusableElementWithin(this.dialog_);
       }
       safeBlur(document.activeElement);
       target && target.focus();
@@ -289,7 +327,7 @@
       if (this.dialog_.hasAttribute('open')) {
         throw new Error('Failed to execute \'showModal\' on dialog: The element is already open, and therefore cannot be opened modally.');
       }
-      if (!document.body.contains(this.dialog_)) {
+      if (!isConnected(this.dialog_)) {
         throw new Error('Failed to execute \'showModal\' on dialog: The element is not in a Document.');
       }
       if (!dialogPolyfill.dm.pushDialog(this)) {
@@ -342,18 +380,10 @@
         bubbles: false,
         cancelable: false
       });
-    
-      // If we have an onclose handler assigned and it's a function, call it
-      if(this.dialog_.onclose instanceof Function) {
-        this.dialog_.onclose(closeEvent);
-      }
-
-      // Dispatch the event as normal
       this.dialog_.dispatchEvent(closeEvent);
-
     }
 
-  };
+  });
 
   var dialogPolyfill = {};
 
@@ -663,6 +693,7 @@
           return realGet.call(this);
         };
         var realSet = methodDescriptor.set;
+        /** @this {HTMLElement} */
         methodDescriptor.set = function(v) {
           if (typeof v === 'string' && v.toLowerCase() === 'dialog') {
             return this.setAttribute('method', v);
