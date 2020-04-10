@@ -134,8 +134,7 @@ function findFocusableElementWithin(hostElement) {
  * @return {Boolean} whether the element is in DOM
  */
 function isConnected(element) {
-  var root = element.getRootNode ? element.getRootNode() : document.body;
-  return root === element ? false : root.contains(element);
+  return element.isConnected || document.body.contains(element);
 }
 
 /**
