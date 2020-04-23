@@ -35,18 +35,18 @@ export function parentsOfName(curr, localName) {
  * This recurses to find the answer.
  *
  * @param {!Element|!ShadowRoot} node
+ * @param {boolean} useTabIndex whether to match on tabindex first
  * @return {?Element}
  */
-export function focusFirst(node) {
+export function focusFirst(node, useTabIndex = false) {
   const host = node.getRootNode();
 
-  // TODO(samthor): I'd love to focus the most correct element, but Chrome's native implementation
-  // doesn't work this way. It literally finds the first focusable in DOM order.
-  if (false) {
+  // This isn't used for initial dialog focus, as Chrome's native implementation literally finds
+  // the first focusable in DOM order.
+  if (useTabIndex) {
     const initialFocus = Array.from(node.querySelectorAll('*[tabindex]'))
         .filter((cand) => {
           // nb. ignore "0", they exist in normal walker
-          // TODO: -1 might be supported in native
           return cand.tabIndex > 0;
         })
         .sort(({tabIndex: a}, {tabIndex: b}) => a - b)

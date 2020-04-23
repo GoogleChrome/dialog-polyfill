@@ -34,7 +34,7 @@ dialog[open] {
   display: flex !important;
 }
 dialog::backdrop {
-  background: red;
+  background: rgba(255, 0, 0, 0.5);
 }
 </style>
 <dialog><slot></slot></dialog>

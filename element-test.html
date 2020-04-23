@@ -66,7 +66,13 @@
 
   showOtherModal.onclick = () => dialogOther.showModal();
 
+  focusOuter.onclick = () => {
+    outerText.focus();
+  };
+
 </script>
+
+<textarea tabindex="0" id="outerText">Who knows</textarea>
 
 <x-dialog id="dialog">
   <div id="innerDiv">
@@ -79,6 +85,8 @@
   <div class="box">
     <textarea tabindex="-1">Not focusable</textarea>
     Hello, I'm probably a dialog dialog
+
+    <button id="focusOuter">Focus on outer textarea</button>
 
     <input type="text" placeholder="ti-b" tabindex="10" />
     <input type="text" placeholder="ti-a" tabindex="-100" />

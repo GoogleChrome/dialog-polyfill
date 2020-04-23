@@ -9,7 +9,6 @@ const returnSymbol = Symbol('returnValue');
 /** @type {!Array<!SupportDialogElement>} */
 const modalStack = [];
 
-
 /**
  * @param {!SupportDialogElement} dialog
  * @param {boolean} modal
@@ -27,12 +26,19 @@ function setModal(dialog, modal) {
     main.classList.add('modal');
   } else {
     modalStack.splice(modalIndex, 1);
-    main.classList.remove('modal');
+    main.classList.remove('modal', 'removed');  // we can't be removed if not modal
   }
+}
 
+/** @type {?SupportDialogElement} */
+let topOpenModal = null;
+
+/**
+ */
+function updateStack() {
   // The polyfill element only shows the top-most modal dialog, and its parents which are _also_
   // modal dialogs (as they are guaranteed to be behind the top-most). Others are hidden.
-  const top = modalStack[0] || null;
+  const top = modalStack.find((dialog) => dialog.open) || null;
   const parents = parentsOfName(top, dialog.localName);
   modalStack.forEach((modal) => {
     if (parents.has(modal)) {
@@ -41,28 +47,35 @@ function setModal(dialog, modal) {
       modal[mainSymbol].classList.add('removed');
     }
   });
+
+  if (top === topOpenModal) {
+    return;
+  }
+  console.warn('updating top', top, modalStack, new Error);
+  topOpenModal = top;
+
+  if (top === null) {
+    window.removeEventListener('keydown', keyHandler);
+  } else {
+    window.addEventListener('keydown', keyHandler);
+  }
 }
 
 
-window.addEventListener('keydown', (e) => {
+const keyHandler = (e) => {
   if (e.key !== 'Escape' && e.keyCode !== 27) {
     return;
   }
 
-  const dialog = modalStack.find((dialog) => dialog.open);
-  if (!dialog) {
-    return;
-  }
-
   const event = new Event('cancel', {bubbles: false, cancelable: true});
-  if (!dialog.dispatchEvent(event)) {
+  if (!topOpenModal.dispatchEvent(event)) {
     return;
   }
 
-  dialog.close();  // this'll get removed as a byproduct in setModal
+  topOpenModal.close();  // this'll get removed as a byproduct in setModal
   e.preventDefault();
   e.stopImmediatePropagation();
-});
+};
 
 
 const supportTemplate = document.createElement('template');
@@ -105,6 +118,10 @@ ensureNamedEvents(['close', 'cancel']);
 
 
 export default class SupportDialogElement extends HTMLElement {
+  static get observedAttributes() {
+    return ['open'];
+  }
+
   constructor() {
     super();
 
@@ -117,6 +134,14 @@ export default class SupportDialogElement extends HTMLElement {
     // If this was a modal, and .close() wasn't called, then this continues to be a modal.
     // So don't check or reset its state.
     this.open = true;
+
+    if (modalStack.indexOf(this) !== -1) {
+      // It's possible that we were hidden but set as modal.
+      updateStack();
+    }
+
+    // TODO: this should fail if we're _not_ inside a modal
+    // (but that's "as normal")
     focusFirst(this[mainSymbol]);
   }
 
@@ -129,12 +154,14 @@ export default class SupportDialogElement extends HTMLElement {
     }
     this.open = true;
     setModal(this, true);
+    updateStack();
     focusFirst(this[mainSymbol]);
   }
 
   close(returnValue) {
     if (this.open) {
       this.open = false;
+      updateStack();
       setModal(this, false);
 
       if (returnValue !== undefined) {
@@ -146,6 +173,7 @@ export default class SupportDialogElement extends HTMLElement {
 
   disconnectedCallback() {
     // doesn't close, but does remove modal-ness
+    updateStack();
     setModal(this, false);
   }
 
@@ -167,5 +195,11 @@ export default class SupportDialogElement extends HTMLElement {
 
   set returnValue(v) {
     this[returnSymbol] = String(v);
+  }
+
+  attributeChangedCallback(attrName, oldValue, newValue) {
+    if (attrName === 'open') {
+      updateStack();
+    }
   }
 }
