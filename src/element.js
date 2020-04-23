@@ -59,11 +59,11 @@ function updateStack() {
 
   if (blockingChange) {
     if (top === null) {
-      document.removeEventListener('focus', focusHandler, true);
+      document.removeEventListener('focusin', focusHandler, true);
       window.removeEventListener('click', clickHandler, true);
       window.removeEventListener('keydown', keyHandler);
     } else {
-      document.addEventListener('focus', focusHandler, true);
+      document.addEventListener('focusin', focusHandler, true);
       window.addEventListener('click', clickHandler, true);
       window.addEventListener('keydown', keyHandler);
     }
@@ -75,12 +75,30 @@ const focusHandler = (e) => {
     return;  // fine
   }
 
-  const path = composedPath(e.target);
+  // This descends into the deepest possible root to find the actual active element, as the focusin
+  // handler is only added on document.
+  // TODO(samthor): Descend only from the root of `topOpenModal` to save frames (adding a listener
+  // there is basically the same thing)
+  let curr = e.target;
+  while (curr && curr.shadowRoot && curr.shadowRoot.activeElement) {
+    curr = curr.shadowRoot.activeElement;
+  }
+
+  const path = composedPath(curr);
   if (path.indexOf(topOpenModal) !== -1) {
     return;
   }
 
-  console.warn('got INVALID focus', e.target, 'top', topOpenModal);
+  const position = topOpenModal.compareDocumentPosition(event.target);
+  if (position & Node.DOCUMENT_POSITION_PRECEDING) {
+    console.warn('invalid focus before');
+  } else {
+    console.warn('invalid focus after');
+  }
+
+  e.preventDefault();
+
+  console.warn('got INVALID focus', curr, 'top', topOpenModal, position);
 };
 
 
@@ -140,8 +158,12 @@ main.modal {
 main.removed {
   display: none !important;
 }
+#after {
+  position: fixed;
+}
 </style>
 <main><slot></slot></main>
+<div id="after" tabindex="0"></div>
 `;
 
 

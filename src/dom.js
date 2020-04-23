@@ -77,17 +77,22 @@ export function focusFirst(node, {useTabIndex, autofocus} = {}) {
       }
     }
 
-    if (currentNode.shadowRoot) {
-      const result = focusFirst(currentNode.shadowRoot);
-      if (result) {
-        return result;
-      }
-      // We don't want to descend into the subtree, because we find our elements via the shadowRoot.
-      // So skip over it, or go up if there's no more siblings.
-      currentNode = walker.nextSibling() || walker.parentNode();
-    } else {
+    if (!currentNode.shadowRoot) {
       currentNode = walker.nextNode();
+      continue;
     }
+
+    const result = focusFirst(currentNode.shadowRoot);
+    if (result) {
+      return result;
+    }
+    // We don't want to descend into the subtree, because we find our elements via the shadowRoot.
+    // So skip over it, or go up if there's no more siblings.
+    do {
+      if (currentNode = walker.nextSibling()) {
+        continue;
+      }
+    } while (currentNode = walker.parentNode());
   }
 
   return null;

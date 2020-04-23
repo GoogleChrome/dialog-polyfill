@@ -57,6 +57,7 @@
   const innerRoot = innerDiv.attachShadow({mode: 'open'});
   innerRoot.innerHTML = `
   <x-dialog id="innerDialog">
+    <input type="search" placeholder="In shadow root" />
     <slot></slot>
   </x-dialog>
   `;
