@@ -72,13 +72,17 @@
   <div id="innerDiv">
     <div class="box">
       within the inner dialog
+      <input type="text" placeholder="inner" />
     </div>
   </div>
 
   <div class="box">
+    <textarea tabindex="-1">Not focusable</textarea>
     Hello, I'm probably a dialog dialog
 
-    <button id="innerOpen">Open inner dialog</button>
+    <input type="text" placeholder="ti-b" tabindex="10" />
+    <input type="text" placeholder="ti-a" tabindex="-100" />
+    <button id="innerOpen" tabindex="100">Open inner dialog</button>
   </div>
 </x-dialog>
 

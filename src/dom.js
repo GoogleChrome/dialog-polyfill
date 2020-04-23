@@ -1,6 +1,105 @@
 
 
 /**
+ * Finds all parents, including outside the current shadow root, of the given name.
+ *
+ * @param {?Element} curr to search from, inclusive
+ * @param {string} localName which element name to match
+ * @return {!Set<!Element>}
+ */
+export function parentsOfName(curr, localName) {
+  const all = new Set();
+
+  while (curr) {
+    const next = curr.closest(localName);
+    if (next) {
+      all.add(next);
+
+      if (next.parentElement) {
+        curr = next.parentElement;
+        continue;
+      }
+    }
+
+    const root = curr.getRootNode();
+    curr = root.host;
+  }
+
+  return all;
+}
+
+
+/**
+ * Finds the first element that can be focused, and focus it.
+ *
+ * This recurses to find the answer.
+ *
+ * @param {!Element|!ShadowRoot} node
+ * @return {?Element}
+ */
+export function focusFirst(node) {
+  const host = node.getRootNode();
+
+  // TODO(samthor): I'd love to focus the most correct element, but Chrome's native implementation
+  // doesn't work this way. It literally finds the first focusable in DOM order.
+  if (false) {
+    const initialFocus = Array.from(node.querySelectorAll('*[tabindex]'))
+        .filter((cand) => {
+          // nb. ignore "0", they exist in normal walker
+          // TODO: -1 might be supported in native
+          return cand.tabIndex > 0;
+        })
+        .sort(({tabIndex: a}, {tabIndex: b}) => a - b)
+        .some((cand) => {
+          cand.focus();
+          if (host.activeElement === cand) {
+            return true;
+          }
+        });
+    if (initialFocus) {
+      return host.activeElement;
+    }
+  }
+
+  // Walk through every element and find the first focusable.
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
+  let {currentNode} = walker;
+  while (currentNode) {
+    if (currentNode instanceof window.HTMLSlotElement) {
+      const assigned = currentNode.assignedElements();
+      for (const element of assigned) {
+        const result = focusFirst(element);
+        if (result) {
+          return result;
+        }
+      }
+    }
+
+    if (currentNode !== node) {
+      currentNode.focus();
+      if (host.activeElement === currentNode) {
+        return currentNode;
+      }
+    }
+
+    if (currentNode.shadowRoot) {
+      const result = focusFirst(currentNode.shadowRoot);
+      if (result) {
+        return result;
+      }
+      // We don't want to descend into the subtree, because we find our elements via the shadowRoot.
+      // So skip over it, or go up if there's no more siblings.
+      currentNode = walker.nextSibling() || walker.parentNode();
+    } else {
+      currentNode = walker.nextNode();
+    }
+  }
+
+  return null;
+}
+
+
+/**
  * Ensure that the passed event names work as on... events.
  *
  * These have interesting semantics:

@@ -1,5 +1,5 @@
 
-import {ensureNamedEvents} from './dom.js';
+import {ensureNamedEvents, parentsOfName, focusFirst} from './dom.js';
 
 
 const mainSymbol = Symbol('mainElement');
@@ -29,6 +29,18 @@ function setModal(dialog, modal) {
     modalStack.splice(modalIndex, 1);
     main.classList.remove('modal');
   }
+
+  // The polyfill element only shows the top-most modal dialog, and its parents which are _also_
+  // modal dialogs (as they are guaranteed to be behind the top-most). Others are hidden.
+  const top = modalStack[0] || null;
+  const parents = parentsOfName(top, dialog.localName);
+  modalStack.forEach((modal) => {
+    if (parents.has(modal)) {
+      modal[mainSymbol].classList.remove('removed');
+    } else {
+      modal[mainSymbol].classList.add('removed');
+    }
+  });
 }
 
 
@@ -57,7 +69,7 @@ const supportTemplate = document.createElement('template');
 supportTemplate.innerHTML = `
 <style>
 main {
-  display: none !important;
+  display: none;
   align-items: center;
   justify-content: center;
   flex-flow: column;
@@ -68,7 +80,7 @@ main {
   bottom: 0;
 }
 :host([open]) main {
-  display: flex !important;
+  display: flex;
 }
 main:not(.modal) {
   pointer-events: none;
@@ -78,6 +90,9 @@ main:not(.modal) ::slotted(*) {
 }
 main.modal {
   background: rgba(255, 0, 0, 0.5);
+}
+main.removed {
+  display: none !important;
 }
 </style>
 <main><slot></slot></main>
@@ -102,6 +117,7 @@ export default class SupportDialogElement extends HTMLElement {
     // If this was a modal, and .close() wasn't called, then this continues to be a modal.
     // So don't check or reset its state.
     this.open = true;
+    focusFirst(this[mainSymbol]);
   }
 
   showModal() {
@@ -113,6 +129,7 @@ export default class SupportDialogElement extends HTMLElement {
     }
     this.open = true;
     setModal(this, true);
+    focusFirst(this[mainSymbol]);
   }
 
   close(returnValue) {
