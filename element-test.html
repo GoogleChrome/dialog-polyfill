@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+.long {
+  background: blue;
+  width: 20px;
+  height: 400px;
+  margin: 1em;
+}
+.box {
+  background: white;
+  border: solid;
+  padding: 1em;
+}
+.box::before {
+  content: '';
+  z-index: -1;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+}
+  </style>
+</head>
+<body>
+
+<h1 id="title"></h1>
+<header>
+  <a href="?">Use default</a>
+  <a href="?polyfill">Force polyfill</a>
+</header>
+
+<script type="module">
+  import polyfillElement from './src/element.js';
+  import nativeElement from './src/element-native.js';
+
+  if (!window.HTMLDialogElement || location.search === '?polyfill') {
+    customElements.define('x-dialog', polyfillElement);
+    title.textContent = 'Polyfill demo';
+  } else {
+    customElements.define('x-dialog', nativeElement);
+    title.textContent = 'Native demo';
+  }
+
+  const d = document.getElementById('dialog');
+  showModal.addEventListener('click', () => {
+    d.showModal();
+  });
+  show.addEventListener('click', () => {
+    d.show();
+  });
+
+  const innerRoot = innerDiv.attachShadow({mode: 'open'});
+  innerRoot.innerHTML = `
+  <x-dialog id="innerDialog">
+    <slot></slot>
+  </x-dialog>
+  `;
+  innerOpen.addEventListener('click', () => {
+    innerRoot.querySelector('#innerDialog').showModal();
+  });
+
+  showOtherModal.onclick = () => dialogOther.showModal();
+
+</script>
+
+<x-dialog id="dialog">
+  <div id="innerDiv">
+    <div class="box">
+      within the inner dialog
+    </div>
+  </div>
+
+  <div class="box">
+    Hello, I'm probably a dialog dialog
+
+    <button id="innerOpen">Open inner dialog</button>
+  </div>
+</x-dialog>
+
+<x-dialog id="dialogOther">
+  I'm another, different dialog
+</x-dialog>
+
+<button id="show">show</butotn>
+<button id="showModal">showModal</button>
+<button id="showOtherModal">showOtherModal</button>
+
+<div class="long"></div>
+<div class="long"></div>
+<div class="long"></div>
+<div class="long"></div>
+
+</body>
+</html>
