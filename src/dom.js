@@ -1,31 +1,24 @@
 
 
 /**
- * Finds all parents, including outside the current shadow root, of the given name.
+ * Finds the complete composed path of the specified element, from the root.
  *
- * @param {?Element} curr to search from, inclusive
- * @param {string} localName which element name to match
- * @return {!Set<!Element>}
+ * TODO: this abuses Event.composed. Is there a better way to do this?
+ *
+ * @param {?Element} element to get composed path of
+ * @return {!Array<!Element|!ShadowRoot>} path
  */
-export function parentsOfName(curr, localName) {
-  const all = new Set();
-
-  while (curr) {
-    const next = curr.closest(localName);
-    if (next) {
-      all.add(next);
-
-      if (next.parentElement) {
-        curr = next.parentElement;
-        continue;
-      }
-    }
-
-    const root = curr.getRootNode();
-    curr = root.host;
+export function composedPath(element) {
+  if (!element) {
+    return [];
   }
-
-  return all;
+  let composedPath;
+  const eventName = `__composed_${Math.random()}`;
+  element.addEventListener(eventName, (e) => {
+    composedPath = e.composedPath();
+  }, {once: true});
+  element.dispatchEvent(new Event(eventName, {composed: true}));
+  return composedPath;
 }
 
 
@@ -35,28 +28,30 @@ export function parentsOfName(curr, localName) {
  * This recurses to find the answer.
  *
  * @param {!Element|!ShadowRoot} node
- * @param {boolean} useTabIndex whether to match on tabindex first
  * @return {?Element}
  */
-export function focusFirst(node, useTabIndex = false) {
+export function focusFirst(node, {useTabIndex, autofocus} = {}) {
   const host = node.getRootNode();
+  const focusAndCheck = (el) => {
+    el.focus();
+    return host.activeElement === cand;
+  };
+
+  if (autofocus) {
+    const focused = Array.from(node.querySelectorAll('*[autofocus]')).some(focusAndCheck);
+    if (focused) {
+      return host.activeElement;
+    }
+  }
 
   // This isn't used for initial dialog focus, as Chrome's native implementation literally finds
   // the first focusable in DOM order.
   if (useTabIndex) {
-    const initialFocus = Array.from(node.querySelectorAll('*[tabindex]'))
-        .filter((cand) => {
-          // nb. ignore "0", they exist in normal walker
-          return cand.tabIndex > 0;
-        })
+    const focused = Array.from(node.querySelectorAll('*[tabindex]'))
+        .filter((cand) => cand.tabIndex > 0)  // ignore "0" as they're normal
         .sort(({tabIndex: a}, {tabIndex: b}) => a - b)
-        .some((cand) => {
-          cand.focus();
-          if (host.activeElement === cand) {
-            return true;
-          }
-        });
-    if (initialFocus) {
+        .some(focusAndCheck);
+    if (focused) {
       return host.activeElement;
     }
   }

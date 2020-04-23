@@ -1,5 +1,5 @@
 
-import {ensureNamedEvents, parentsOfName, focusFirst} from './dom.js';
+import {ensureNamedEvents, focusFirst, composedPath} from './dom.js';
 
 
 const mainSymbol = Symbol('mainElement');
@@ -33,15 +33,18 @@ function setModal(dialog, modal) {
 /** @type {?SupportDialogElement} */
 let topOpenModal = null;
 
+/** @type {boolean|undefined} */
+let forwardTab = undefined;
+
 /**
  */
 function updateStack() {
   // The polyfill element only shows the top-most modal dialog, and its parents which are _also_
   // modal dialogs (as they are guaranteed to be behind the top-most). Others are hidden.
   const top = modalStack.find((dialog) => dialog.open) || null;
-  const parents = parentsOfName(top, dialog.localName);
+  const path = composedPath(top);
   modalStack.forEach((modal) => {
-    if (parents.has(modal)) {
+    if (path.indexOf(modal) !== -1) {
       modal[mainSymbol].classList.remove('removed');
     } else {
       modal[mainSymbol].classList.add('removed');
@@ -51,18 +54,48 @@ function updateStack() {
   if (top === topOpenModal) {
     return;
   }
-  console.warn('updating top', top, modalStack, new Error);
+  const blockingChange = (top === null || topOpenModal === null);
   topOpenModal = top;
 
-  if (top === null) {
-    window.removeEventListener('keydown', keyHandler);
-  } else {
-    window.addEventListener('keydown', keyHandler);
+  if (blockingChange) {
+    if (top === null) {
+      document.removeEventListener('focus', focusHandler, true);
+      window.removeEventListener('click', clickHandler, true);
+      window.removeEventListener('keydown', keyHandler);
+    } else {
+      document.addEventListener('focus', focusHandler, true);
+      window.addEventListener('click', clickHandler, true);
+      window.addEventListener('keydown', keyHandler);
+    }
   }
 }
 
+const focusHandler = (e) => {
+  if (topOpenModal.contains(e.target)) {
+    return;  // fine
+  }
+
+  const path = composedPath(e.target);
+  if (path.indexOf(topOpenModal) !== -1) {
+    return;
+  }
+
+  console.warn('got INVALID focus', e.target, 'top', topOpenModal);
+};
+
+
+const clickHandler = (e) => {
+  forwardTab = false;
+};
+
 
 const keyHandler = (e) => {
+  if (e.key === 'Tab' || e.keyCode === 9) {
+    forwardTab = !e.shiftKey;
+    return;
+  }
+  forwardTab = undefined;
+
   if (e.key !== 'Escape' && e.keyCode !== 27) {
     return;
   }
@@ -127,7 +160,18 @@ export default class SupportDialogElement extends HTMLElement {
 
     const root = this.attachShadow({mode: 'open'});
     root.append(supportTemplate.content.cloneNode(true));
-    this[mainSymbol] = root.querySelector('main');
+
+    const main = root.querySelector('main');
+
+    // By creating a second element with tabindex="0", we contain focus within this element. So
+    // once we _get_ focus within this element, users can't escape as all tabindex is scoped within
+    // this. This is a weird side-effect of the Shadow DOM spec. (The tabindex can also be on the
+    // outer element, but we can hide it from the light DOM this way).
+    const innerRoot = main.attachShadow({mode: 'open'});
+    innerRoot.append(document.createElement('slot'));
+    main.tabIndex = -1;
+
+    this[mainSymbol] = main;
  }
 
   show() {
@@ -142,7 +186,7 @@ export default class SupportDialogElement extends HTMLElement {
 
     // TODO: this should fail if we're _not_ inside a modal
     // (but that's "as normal")
-    focusFirst(this[mainSymbol]);
+    focusFirst(this[mainSymbol], {autofocus: true});
   }
 
   showModal() {
@@ -155,7 +199,7 @@ export default class SupportDialogElement extends HTMLElement {
     this.open = true;
     setModal(this, true);
     updateStack();
-    focusFirst(this[mainSymbol]);
+    focusFirst(this[mainSymbol], {autofocus: true});
   }
 
   close(returnValue) {

@@ -78,18 +78,20 @@
   <div id="innerDiv">
     <div class="box">
       within the inner dialog
+      <div id="focusable" tabindex="0" autofocus>Focusable?</div>
+
       <input type="text" placeholder="inner" />
     </div>
   </div>
 
   <div class="box">
-    <textarea tabindex="-1">Not focusable</textarea>
+    <textarea>Stuff</textarea>
     Hello, I'm probably a dialog dialog
 
     <button id="focusOuter">Focus on outer textarea</button>
 
-    <input type="text" placeholder="ti-b" tabindex="10" />
-    <input type="text" placeholder="ti-a" tabindex="-100" />
+    <input type="text" placeholder="ti-b" tabindex="10" autofocus disabled />
+    <input type="text" placeholder="ti-a" tabindex="20" autofocus />
     <button id="innerOpen" tabindex="100">Open inner dialog</button>
   </div>
 </x-dialog>
@@ -99,7 +101,7 @@
 </x-dialog>
 
 <button id="show">show</butotn>
-<button id="showModal">showModal</button>
+<button id="showModal" tabindex="15">showModal</button>
 <button id="showOtherModal">showOtherModal</button>
 
 <div class="long"></div>
