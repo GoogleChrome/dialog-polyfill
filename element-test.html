@@ -74,6 +74,10 @@
   focusBefore.onclick = () => thingBefore.focus();
   focusAfter.onclick = () => thingAfter.focus();
 
+  document.addEventListener('submit', (e) => {
+    console.warn('document submit', e.target, e.submitter);
+  });
+
 </script>
 
 <textarea tabindex="0" id="outerText">Who knows</textarea>
@@ -105,8 +109,24 @@
   </div>
 </x-dialog>
 
+<dialog id="realDialog">
+  I'm a real dialog
+  <form method="dialog">
+    <button>Button to submit the dialog form</button>
+    <input type="submit" value="Submit button" />
+  </form>
+</dialog>
+
 <x-dialog id="dialogOther">
   I'm another, different dialog
+  <form method="dialog">
+    <button>Button to submit the dialog form</button>
+    <input type="submit" value="Submit button" />
+  </form>
+  <form method="post">
+    <button>Button to submit the regular form</button>
+    <input type="submit" value="Submit button" />
+  </form>
 </x-dialog>
 
 <button id="show">show</button>

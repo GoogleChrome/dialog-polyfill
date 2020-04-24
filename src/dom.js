@@ -150,7 +150,7 @@ export function focusLast(node) {
       }
     }
 
-    if (currentNode.previousSibling?.shadowRoot) {
+    if (currentNode.previousSibling && currentNode.previousSibling.shadowRoot) {
       focusLast(currentNode.previousSibling);
 
       // Skip previous sibling's root, as previousNode will move into its light children.

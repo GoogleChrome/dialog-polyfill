@@ -1,5 +1,9 @@
 
 import {ensureNamedEvents, focusFirst, focusLast, composedPath, isTabbableBefore} from './dom.js';
+import {ensureFormMethodDialog} from './form.js';
+
+
+ensureFormMethodDialog();
 
 
 const mainSymbol = Symbol('mainElement');

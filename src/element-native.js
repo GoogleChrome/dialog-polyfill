@@ -1,5 +1,36 @@
 
+import {composedPath} from './dom.js';
+
 const dialogSymbol = Symbol('dialog');
+
+
+// Chrome won't .submit() a `<form method="dialog">` when it's actually in a nearby Shadow Root.
+// We fix this for cases that match the custom element.
+const nativeFormSubmit = HTMLFormElement.prototype.submit;
+HTMLFormElement.prototype.submit = function() {
+  if (this.method !== 'dialog') {
+    return nativeFormSubmit.call(this);
+  }
+
+  const p = composedPath(this);
+
+  // Find the nearest containing <dialog>, which exists even within <x-dialog>.
+  const nativeDialogIndex = p.findIndex((cand) => cand.localName === 'dialog');
+  if (nativeDialogIndex === -1) {
+    return nativeFormSubmit.call(this);
+  }
+  const dialog = p[nativeDialogIndex];
+
+  // Now, find the nearest <dialog> or <x-dialog>. If we find the native element or null, do nothing
+  // as this means (somehow) we're just a native element (double dialog or no parent).
+  const hit = p.slice(0, nativeDialogIndex).find((cand) => cand.localName === 'dialog' || cand instanceof NativeXDialogElement);
+  if (!hit || hit.localName === 'dialog') {
+    return nativeFormSubmit.call(this);
+  }
+
+  // The submit method doesn't dispatch an event.
+  dialog.close();
+};
 
 
 /**
@@ -61,6 +92,19 @@ dialog::backdrop {
       if (!this.dispatchEvent(clone)) {
         e.preventDefault();
       }
+    });
+
+    // This isn't triggered by the <dialog>, it's actually by any enclosed form.
+    d.addEventListener('submit', (e) => {
+      const origin = e.composedPath()[0];
+      if (origin.method !== 'dialog') {
+        return;
+      }
+
+      const submitter = origin.getRootNode().activeElement || e.submitter || null;
+      this.close(submitter.value || undefined);
+
+      e.preventDefault();
     });
   }
 
