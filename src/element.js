@@ -57,8 +57,17 @@ function updateStack() {
     return;
   }
   const blockingChange = (top === null || topOpenModal === null);
+
+  // The top modal is actually changing, configure aria roles and friends.
+  if (topOpenModal) {
+    topOpenModal[mainSymbol].removeAttribute('role');
+  }
+  if (top) {
+    top[mainSymbol].setAttribute('role', 'dialog');
+  }
   topOpenModal = top;
 
+  // Are we transitioning from no dialog to dialog, or vice versa?
   if (blockingChange) {
     if (top === null) {
       document.removeEventListener('focusin', focusHandler, true);
@@ -92,13 +101,7 @@ const focusHandler = (e) => {
   }
 
   const isBefore = isTabbableBefore(curr, topOpenModal);
-  const main = topOpenModal[mainSymbol];
-  console.warn('got unknown focus', isBefore);
-  if (isBefore) {
-    focusFirst(main, {useTabIndex: true});
-  } else {
-    focusLast(main);
-  }
+  focusEdge(topOpenModal[mainSymbol], isBefore, {useTabIndex: true});
 };
 
 
@@ -172,16 +175,20 @@ ensureNamedEvents(['close', 'cancel']);
 
 
 /**
- * Configures the passed element with a no-op Shadow Root and a default negative tabindex.
- *
- * Naïvely, this appears pointless. In reality, it scopes tab focusing within this element, so that
- * all contained elements (until another 'scoped' tabindex root) are tabbed to together.
- *
- * @param {!Element} el to attach root to
+ * Focus on the edge, or fallback to fake focus on the element itself.
  */
-function configureEmptySlot(el, tabIndex = -1) {
-  const root = el.attachShadow({mode: 'open'});
-  root.appendChild(document.createElement('slot'));
+function focusEdge(el, start, options) {
+  const focused = start ? focusFirst(el, options) : focusLast(el);
+  if (!focused) {
+    if (el.hasAttribute('tabindex')) {
+      el.focus();
+    } else {
+      el.tabIndex = -1;
+      el.focus();
+      el.removeAttribute('tabindex');
+    }
+  }
+  return focused;
 }
 
 
@@ -210,22 +217,13 @@ export default class SupportDialogElement extends HTMLElement {
     const after = root.getElementById('after');
 
     outer.addEventListener('focus', () => {
-      if (forwardTab === false) {
-        // The user tabbed backwards out of the dialog. Move to the end.
-        focusLast(main);
-      } else {
-        // Unknown, focus on first.
-        focusFirst(main, {useTabIndex: true});
-      }
+      // If the user tabbed backwards out of the dialog, move the to end.
+      // nb. the `!== false` is intentional as this could be undefined for non-tab
+      focusEdge(main, forwardTab !== false, {useTabIndex: true});
     });
     after.addEventListener('focus', () => {
-      if (forwardTab === true) {
-        // The user tabbed forward out of the dialog. Move to the start.
-        focusFirst(main, {useTabIndex: true});
-      } else {
-        // Unknown, focus on last.
-        focusLast(main);
-      }
+      // If the user tabbed forward out of the dialog, move to the start.
+      focusEdge(main, forwardTab === true, {useTabIndex: true});
     });
   }
 
@@ -239,9 +237,9 @@ export default class SupportDialogElement extends HTMLElement {
       updateStack();
     }
 
-    // TODO: this should fail if we're _not_ inside a modal
-    // (but that's "as normal")
-    focusFirst(this[mainSymbol], {autofocus: true, allowIgnored: true});
+    // This will be redirected if we're _not_ inside a modal, but that's no different than any
+    // element on the page trying to take focus.
+    focusEdge(this[mainSymbol], true, {autofocus: true, allowIgnored: true});
   }
 
   showModal() {
@@ -254,8 +252,8 @@ export default class SupportDialogElement extends HTMLElement {
     this.open = true;
     setModal(this, true);
     updateStack();
-    const show = focusFirst(this[mainSymbol], {autofocus: true, allowIgnored: true});
-    console.warn('showing', show);
+
+    focusEdge(this[mainSymbol], true, {autofocus: true, allowIgnored: true});
   }
 
   close(returnValue) {
