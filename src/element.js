@@ -1,8 +1,9 @@
 
-import {ensureNamedEvents, focusFirst, composedPath} from './dom.js';
+import {ensureNamedEvents, focusFirst, focusLast, composedPath, isTabbableBefore} from './dom.js';
 
 
 const mainSymbol = Symbol('mainElement');
+const outerSymbol = Symbol('outerElement');
 const returnSymbol = Symbol('returnValue');
 
 
@@ -20,13 +21,13 @@ function setModal(dialog, modal) {
     return;  // nothing to do
   }
 
-  const main = dialog[mainSymbol];
+  const outer = dialog[outerSymbol];
   if (modal) {
     modalStack.unshift(dialog);  // most recent is 0th index
-    main.classList.add('modal');
+    outer.classList.add('modal');
   } else {
     modalStack.splice(modalIndex, 1);
-    main.classList.remove('modal', 'removed');  // we can't be removed if not modal
+    outer.classList.remove('modal', 'removed');  // we can't be removed if not modal
   }
 }
 
@@ -44,10 +45,11 @@ function updateStack() {
   const top = modalStack.find((dialog) => dialog.open) || null;
   const path = composedPath(top);
   modalStack.forEach((modal) => {
+    const outer = modal[outerSymbol];
     if (path.indexOf(modal) !== -1) {
-      modal[mainSymbol].classList.remove('removed');
+      outer.classList.remove('removed');
     } else {
-      modal[mainSymbol].classList.add('removed');
+      outer.classList.add('removed');
     }
   });
 
@@ -72,33 +74,31 @@ function updateStack() {
 
 const focusHandler = (e) => {
   if (topOpenModal.contains(e.target)) {
-    return;  // fine
+    return;  // simple case
   }
 
   // This descends into the deepest possible root to find the actual active element, as the focusin
   // handler is only added on document.
   // TODO(samthor): Descend only from the root of `topOpenModal` to save frames (adding a listener
-  // there is basically the same thing)
+  // there is basically the same thing), but this might not work because of odd <slot> arrangement.
   let curr = e.target;
   while (curr && curr.shadowRoot && curr.shadowRoot.activeElement) {
     curr = curr.shadowRoot.activeElement;
   }
 
-  const path = composedPath(curr);
-  if (path.indexOf(topOpenModal) !== -1) {
+  const focusPath = composedPath(curr);
+  if (focusPath.indexOf(topOpenModal) !== -1) {
     return;
   }
 
-  const position = topOpenModal.compareDocumentPosition(event.target);
-  if (position & Node.DOCUMENT_POSITION_PRECEDING) {
-    console.warn('invalid focus before');
+  const isBefore = isTabbableBefore(curr, topOpenModal);
+  const main = topOpenModal[mainSymbol];
+  console.warn('got unknown focus', isBefore);
+  if (isBefore) {
+    focusFirst(main, {useTabIndex: true});
   } else {
-    console.warn('invalid focus after');
+    focusLast(main);
   }
-
-  e.preventDefault();
-
-  console.warn('got INVALID focus', curr, 'top', topOpenModal, position);
 };
 
 
@@ -133,7 +133,7 @@ const supportTemplate = document.createElement('template');
 supportTemplate.innerHTML = `
 <style>
 main {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   flex-flow: column;
@@ -143,33 +143,46 @@ main {
   right: 0;
   bottom: 0;
 }
-:host([open]) main {
-  display: flex;
+:host(:not([open])) #outer,
+#outer.removed {
+  display: none;
 }
-main:not(.modal) {
+#outer:not(.modal) main {
   pointer-events: none;
 }
-main:not(.modal) ::slotted(*) {
+#outer:not(.modal) main ::slotted(*) {
   pointer-events: auto;
 }
-main.modal {
+#outer.modal main {
   background: rgba(255, 0, 0, 0.5);
 }
-main.removed {
-  display: none !important;
-}
-#after {
+div {
   position: fixed;
 }
 </style>
-<main><slot></slot></main>
-<div id="after" tabindex="0"></div>
+<div id="outer" tabindex="0">
+  <main><slot></slot></main>
+  <div id="after" tabindex="0"></div>
+</div>
 `;
 
 
 // Ensures that 'onclose' and 'oncancel' properties are on HTMLElement.
 ensureNamedEvents(['close', 'cancel']);
 
+
+/**
+ * Configures the passed element with a no-op Shadow Root and a default negative tabindex.
+ *
+ * Naïvely, this appears pointless. In reality, it scopes tab focusing within this element, so that
+ * all contained elements (until another 'scoped' tabindex root) are tabbed to together.
+ *
+ * @param {!Element} el to attach root to
+ */
+function configureEmptySlot(el, tabIndex = -1) {
+  const root = el.attachShadow({mode: 'open'});
+  root.appendChild(document.createElement('slot'));
+}
 
 
 export default class SupportDialogElement extends HTMLElement {
@@ -183,18 +196,38 @@ export default class SupportDialogElement extends HTMLElement {
     const root = this.attachShadow({mode: 'open'});
     root.append(supportTemplate.content.cloneNode(true));
 
+    const outer = root.getElementById('outer');
+    this[outerSymbol] = outer;
+
     const main = root.querySelector('main');
-
-    // By creating a second element with tabindex="0", we contain focus within this element. So
-    // once we _get_ focus within this element, users can't escape as all tabindex is scoped within
-    // this. This is a weird side-effect of the Shadow DOM spec. (The tabindex can also be on the
-    // outer element, but we can hide it from the light DOM this way).
-    const innerRoot = main.attachShadow({mode: 'open'});
-    innerRoot.append(document.createElement('slot'));
-    main.tabIndex = -1;
-
     this[mainSymbol] = main;
- }
+
+    // Naïvely, this appears pointless. In reality, it scopes tab focusing within this element, so
+    // that all contained elements (until another 'scoped' tabindex root) are tabbed to together.
+    // This ensures that 'outer' and 'after' both are ordered correctly.
+    main.attachShadow({mode: 'open'}).appendChild(document.createElement('slot'));
+
+    const after = root.getElementById('after');
+
+    outer.addEventListener('focus', () => {
+      if (forwardTab === false) {
+        // The user tabbed backwards out of the dialog. Move to the end.
+        focusLast(main);
+      } else {
+        // Unknown, focus on first.
+        focusFirst(main, {useTabIndex: true});
+      }
+    });
+    after.addEventListener('focus', () => {
+      if (forwardTab === true) {
+        // The user tabbed forward out of the dialog. Move to the start.
+        focusFirst(main, {useTabIndex: true});
+      } else {
+        // Unknown, focus on last.
+        focusLast(main);
+      }
+    });
+  }
 
   show() {
     // If this was a modal, and .close() wasn't called, then this continues to be a modal.
@@ -208,7 +241,7 @@ export default class SupportDialogElement extends HTMLElement {
 
     // TODO: this should fail if we're _not_ inside a modal
     // (but that's "as normal")
-    focusFirst(this[mainSymbol], {autofocus: true});
+    focusFirst(this[mainSymbol], {autofocus: true, allowIgnored: true});
   }
 
   showModal() {
@@ -221,7 +254,8 @@ export default class SupportDialogElement extends HTMLElement {
     this.open = true;
     setModal(this, true);
     updateStack();
-    focusFirst(this[mainSymbol], {autofocus: true});
+    const show = focusFirst(this[mainSymbol], {autofocus: true, allowIgnored: true});
+    console.warn('showing', show);
   }
 
   close(returnValue) {

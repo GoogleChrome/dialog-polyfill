@@ -22,6 +22,156 @@ export function composedPath(element) {
 }
 
 
+export function commonRoot(a, b, filter = () => true) {
+  const ap = composedPath(a);
+  const bp = composedPath(b);
+
+  const min = Math.min(ap.length, bp.length);
+  let latestRoot = document;
+
+  for (let i = 0; i < min; ++i) {
+    const cand = ap[i];
+    if (cand !== bp[i]) {
+      break;
+    }
+    if (cand instanceof ShadowRoot && filter(cand)) {
+      latestRoot = ap[cand];
+    }
+  }
+
+  return latestRoot;
+}
+
+
+/**
+ * Is element A tabbable before B?
+ *
+ * This doesn't check [disabled] or actually try to focus the element. It should be used for
+ * checking the position of a user's (assumed valid) cursor.
+ *
+ * @param {!Element} a
+ * @param {!Element} b
+ */
+export function isTabbableBefore(a, b) {
+  if (a === b) {
+    return undefined;
+  }
+
+  const ap = composedPath(a);
+  const bp = composedPath(b);
+
+  // put [window, document, ...] at front
+  ap.reverse();
+  bp.reverse();
+
+  let commonRoot = document;
+
+  while (ap.length && bp.length) {
+    const ac = ap.shift();
+    const bc = bp.shift();
+    if (ac !== bc) {
+      break;  // no longer common
+    }
+    if (ac instanceof ShadowRoot) {
+      commonRoot = ap[cand];
+    }
+  }
+
+  // Find effective element for a/b.
+
+  const effectiveElement = (rest, fallback) => {
+    for (const cand of rest) {
+      if (cand instanceof ShadowRoot) {
+        return cand.host;
+      }
+    }
+    return fallback;
+  };
+
+  const ae = effectiveElement(ap, a);
+  const be = effectiveElement(bp, b);
+
+  // This feels like the wrong way around, but it's not.
+  // Is 'ae' preceding 'be'.
+  const domBefore = Boolean(be.compareDocumentPosition(ae) & Node.DOCUMENT_POSITION_PRECEDING);
+ 
+  if (ae.tabIndex > 0) {
+    if (be.tabIndex <= 0 || ae.tabIndex < be.tabIndex) {
+      return true;
+    }
+    return domBefore;  // tabindex is equal
+  } else if (be.tabIndex > 0) {
+    // ae's tabindex must be <= 0
+    return false;
+  }
+
+  return domBefore;
+}
+
+
+/**
+ * Finds the last element that can be focused, and focus it.
+ *
+ * This recurses to find the answer. It does not accept options as this only
+ * exists to respond to user behavior (tabbing).
+ */
+export function focusLast(node) {
+  const host = node.getRootNode();
+  const focusAndCheck = (el) => {
+    el.focus();
+    return host.activeElement === el;
+  };
+
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
+  while (walker.lastChild()) {
+    const {currentNode} = walker;
+    if (currentNode.shadowRoot) {
+      break;
+    }
+    // go deeper
+  }
+
+  let {currentNode} = walker;
+  while (currentNode) {
+    if (currentNode instanceof window.HTMLSlotElement) {
+      const assigned = currentNode.assignedElements();
+      assigned.reverse();
+      for (const element of assigned) {
+        const result = focusLast(element);
+        if (result) {
+          return result;
+        }
+      }
+    }
+
+    if (currentNode.tabIndex === 0) {
+      if (focusAndCheck(currentNode)) {
+        return currentNode;
+      }
+    }
+
+    if (currentNode.previousSibling?.shadowRoot) {
+      focusLast(currentNode.previousSibling);
+
+      // Skip previous sibling's root, as previousNode will move into its light children.
+      currentNode = walker.previousSibling();
+    } else {
+      currentNode = walker.previousNode();
+    }
+  }
+
+  const focused = Array.from(node.querySelectorAll('*[tabindex]'))
+      .filter((cand) => cand.tabIndex > 0)  // already hit regular tabindex elements
+      .sort(({tabIndex: a}, {tabIndex: b}) => b - a)
+      .some(focusAndCheck);
+  if (focused) {
+    return host.activeElement;
+  }
+
+  return null;
+}
+
+
 /**
  * Finds the first element that can be focused, and focus it.
  *
@@ -30,11 +180,16 @@ export function composedPath(element) {
  * @param {!Element|!ShadowRoot} node
  * @return {?Element}
  */
-export function focusFirst(node, {useTabIndex, autofocus} = {}) {
+export function focusFirst(node, options, skipSelf = true) {
+  const {useTabIndex, allowIgnored, autofocus} = options;
+
   const host = node.getRootNode();
   const focusAndCheck = (el) => {
-    el.focus();
-    return host.activeElement === cand;
+    if (el instanceof Element) {
+      el.focus();
+      return host.activeElement === el;
+    }
+    return false;
   };
 
   if (autofocus) {
@@ -63,16 +218,15 @@ export function focusFirst(node, {useTabIndex, autofocus} = {}) {
     if (currentNode instanceof window.HTMLSlotElement) {
       const assigned = currentNode.assignedElements();
       for (const element of assigned) {
-        const result = focusFirst(element);
+        const result = focusFirst(element, options, false);
         if (result) {
           return result;
         }
       }
     }
 
-    if (currentNode !== node) {
-      currentNode.focus();
-      if (host.activeElement === currentNode) {
+    if (!(skipSelf && currentNode === node) && (allowIgnored || currentNode.tabIndex >= 0)) {
+      if (focusAndCheck(currentNode)) {
         return currentNode;
       }
     }
@@ -82,7 +236,8 @@ export function focusFirst(node, {useTabIndex, autofocus} = {}) {
       continue;
     }
 
-    const result = focusFirst(currentNode.shadowRoot);
+    // nb. we can still descend into `tabindex=-1` nodes, this just creates scoping root
+    const result = focusFirst(currentNode.shadowRoot, options, false);
     if (result) {
       return result;
     }

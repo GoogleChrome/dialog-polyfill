@@ -71,9 +71,14 @@
     outerText.focus();
   };
 
+  focusBefore.onclick = () => thingBefore.focus();
+  focusAfter.onclick = () => thingAfter.focus();
+
 </script>
 
 <textarea tabindex="0" id="outerText">Who knows</textarea>
+
+<div id="thingBefore" tabindex="0">I'm before the dialogs</div>
 
 <x-dialog id="dialog">
   <div id="innerDiv">
@@ -94,6 +99,9 @@
     <input type="text" placeholder="ti-b" tabindex="10" autofocus disabled />
     <input type="text" placeholder="ti-a" tabindex="20" autofocus />
     <button id="innerOpen" tabindex="100">Open inner dialog</button>
+
+    <button id="focusBefore">Focus before</button>
+    <button id="focusAfter">Focus after</button>
   </div>
 </x-dialog>
 
@@ -101,9 +109,11 @@
   I'm another, different dialog
 </x-dialog>
 
-<button id="show">show</butotn>
+<button id="show">show</button>
 <button id="showModal" tabindex="15">showModal</button>
 <button id="showOtherModal">showOtherModal</button>
+
+<div id="thingAfter" tabindex="0">I'm after the dialogs</div>
 
 <div class="long"></div>
 <div class="long"></div>

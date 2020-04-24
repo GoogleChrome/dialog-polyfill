@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+
+<script type="module">
+  const root = weird.attachShadow({mode: 'open'});
+  root.innerHTML = `<button tabindex="1">Inside root and 1st</button><slot></slot>`;
+</script>
+
+<div id="weird">
+  <button tabindex="2">I should be second</button>
+</div>
+<button tabindex="100">I should be first</button>
+<button tabindex="0">I should be last</button>
+
+</body>
+</html>
