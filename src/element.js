@@ -1,9 +1,35 @@
 
-import {ensureNamedEvents, focusFirst, focusLast, composedPath, isTabbableBefore} from './dom.js';
+import {ensureNamedEvents, focusFirst, focusLast, composedPath, isTabbableBefore, isFormMethodDialog} from './dom.js';
 import {ensureFormMethodDialog} from './form.js';
+import * as shared from './shared.js';
 
 
 ensureFormMethodDialog();
+
+const nativeFormSubmit = HTMLFormElement.prototype.submit;
+HTMLFormElement.prototype.submit = function() {
+  if (!isFormMethodDialog(this)) {
+    return nativeFormSubmit.call(this);
+  }
+
+  const p = composedPath(this);
+  const dialog = p.find((cand) => cand instanceof SupportDialogElement);
+  if (!dialog) {
+    return nativeFormSubmit.call(this);
+  }
+
+  // The submit method doesn't dispatch an event.
+  dialog.close();
+};
+
+// Regardless of other code, ensure that `<form method="dialog">` does not get submitted as a 'get'
+// causing a page load. This is a noop on supported browsers.
+document.addEventListener('submit', (e) => {
+  const origin = e.composedPath()[0];
+  if (isFormMethodDialog(origin)) {
+    e.preventDefault();
+  }
+});
 
 
 const mainSymbol = Symbol('mainElement');
@@ -166,10 +192,14 @@ main {
 div {
   position: fixed;
 }
+#outer:not(.modal) div.bounds {
+  display: none;
+}
 </style>
-<div id="outer" tabindex="0">
+<div id="outer">
+  <div id="before" class="bounds" tabindex="0"></div>
   <main><slot></slot></main>
-  <div id="after" tabindex="0"></div>
+  <div id="after" class="bounds" tabindex="0"></div>
 </div>
 `;
 
@@ -204,27 +234,29 @@ export default class SupportDialogElement extends HTMLElement {
   constructor() {
     super();
 
+    // Catch a submit handler from any contained form.
+    this.addEventListener('submit', shared.internalSubmitHandler.bind(this));
+
     const root = this.attachShadow({mode: 'open'});
     root.append(supportTemplate.content.cloneNode(true));
 
-    const outer = root.getElementById('outer');
-    this[outerSymbol] = outer;
-
     const main = root.querySelector('main');
     this[mainSymbol] = main;
+    this[outerSymbol] = root.getElementById('outer');
 
     // Naïvely, this appears pointless. In reality, it scopes tab focusing within this element, so
     // that all contained elements (until another 'scoped' tabindex root) are tabbed to together.
     // This ensures that 'outer' and 'after' both are ordered correctly.
     main.attachShadow({mode: 'open'}).appendChild(document.createElement('slot'));
 
-    const after = root.getElementById('after');
-
-    outer.addEventListener('focus', () => {
+    const before = root.getElementById('before');
+    before.addEventListener('focus', () => {
       // If the user tabbed backwards out of the dialog, move the to end.
       // nb. the `!== false` is intentional as this could be undefined for non-tab
       focusEdge(main, forwardTab !== false, {useTabIndex: true});
     });
+
+    const after = root.getElementById('after');
     after.addEventListener('focus', () => {
       // If the user tabbed forward out of the dialog, move to the start.
       focusEdge(main, forwardTab === true, {useTabIndex: true});

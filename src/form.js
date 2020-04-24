@@ -34,7 +34,7 @@ export function ensureFormMethodDialog() {
     return realSet.call(this, v);
   };
 
-  Object.defineProperty(HTMLFormElement.prototype, 'method', methodDescriptor);
+  Object.defineProperty(HTMLFormElement.prototype, 'method', prop);
 }
 
 

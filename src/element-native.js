@@ -1,5 +1,7 @@
 
 import {composedPath} from './dom.js';
+import * as shared from './shared.js';
+
 
 const dialogSymbol = Symbol('dialog');
 
@@ -94,18 +96,9 @@ dialog::backdrop {
       }
     });
 
-    // This isn't triggered by the <dialog>, it's actually by any enclosed form.
-    d.addEventListener('submit', (e) => {
-      const origin = e.composedPath()[0];
-      if (origin.method !== 'dialog') {
-        return;
-      }
-
-      const submitter = origin.getRootNode().activeElement || e.submitter || null;
-      this.close(submitter.value || undefined);
-
-      e.preventDefault();
-    });
+    // This isn't triggered by the <dialog>, it's actually by any enclosed form, and we just catch
+    // the event as it bubbles.
+    this.addEventListener('submit', shared.internalSubmitHandler.bind(this));
   }
 
   show() {
