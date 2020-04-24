@@ -161,26 +161,30 @@ main {
   align-items: center;
   justify-content: center;
   flex-flow: column;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
 }
 :host(:not([open])) #outer,
 #outer.removed {
   display: none;
 }
-#outer:not(.modal) main {
-  pointer-events: none;
-}
-#outer:not(.modal) main ::slotted(*) {
-  pointer-events: auto;
-}
 #outer.modal main {
-  background: rgba(255, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  background: var(--backdrop-color, transparent);
 }
-div {
+#outer.modal {
+  position: fixed;
+}
+#outer:not(.modal) {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+}
+div.bounds {
   position: fixed;
 }
 #outer:not(.modal) div.bounds {

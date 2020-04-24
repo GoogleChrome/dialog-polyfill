@@ -14,7 +14,7 @@
   border: solid;
   padding: 1em;
 }
-.box::before {
+/* .box::before {
   content: '';
   z-index: -1;
   position: fixed;
@@ -23,6 +23,14 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.1);
+} */
+body {
+  --backdrop-color: rgba(0, 0, 255, 0.5);
+}
+#small {
+  width: 200px;
+  background: red;
+  height: 200px;
 }
   </style>
 </head>
@@ -78,6 +86,8 @@
     console.warn('document submit', e.target, e.submitter);
   });
 
+  realDialogShow.onclick = () => realDialog.open = !realDialog.open;
+
 </script>
 
 <textarea tabindex="0" id="outerText">Who knows</textarea>
@@ -109,6 +119,7 @@
   </div>
 </x-dialog>
 
+<div id="small">
 <dialog id="realDialog">
   I'm a real dialog
   <form method="dialog">
@@ -116,6 +127,8 @@
     <input type="submit" value="Submit button" />
   </form>
 </dialog>
+</div>
+<button id="realDialogShow">Show Real (non-modal)</button>
 
 <x-dialog id="dialogOther">
   I'm another, different dialog

@@ -52,22 +52,28 @@ export default class NativeXDialogElement extends HTMLElement {
 dialog {
   padding: 0;
   border: 0;
-  display: none !important;
   align-items: center;
   justify-content: center;
   flex-flow: column;
-  position: fixed;
   background: transparent;
+  display: none;
+}
+dialog[open] {
+  display: flex;
+}
+dialog::backdrop {
+  display: none;
+}
+dialog.modal {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-}
-dialog[open] {
-  display: flex !important;
-}
-dialog::backdrop {
-  background: rgba(255, 0, 0, 0.5);
+  pointer-events: auto;
+  background: var(--backdrop-color, transparent);
+  height: auto;
+  width: auto;
 }
 </style>
 <dialog><slot></slot></dialog>
@@ -93,6 +99,9 @@ dialog::backdrop {
       const clone = new Event('cancel', {bubbles: false, cancelable: true});
       if (!this.dispatchEvent(clone)) {
         e.preventDefault();
+      } else {
+        // In the polyfill, cancel calls close() which removes modal-ness.
+        d.classList.remove('modal');
       }
     });
 
@@ -106,11 +115,20 @@ dialog::backdrop {
   }
 
   showModal() {
-    this[dialogSymbol].showModal();
+    const d = this[dialogSymbol];
+    d.classList.add('modal');
+    d.showModal();
   }
 
   close(returnValue) {
-    this[dialogSymbol].close(returnValue);
+    const d = this[dialogSymbol];
+    d.close(returnValue);
+    d.classList.remove('modal');
+  }
+
+  disconnectedCallback() {
+    const d = this[dialogSymbol];
+    d.classList.remove('modal');
   }
 
   get open() {
