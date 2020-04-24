@@ -22,15 +22,6 @@ HTMLFormElement.prototype.submit = function() {
   dialog.close();
 };
 
-// Regardless of other code, ensure that `<form method="dialog">` does not get submitted as a 'get'
-// causing a page load. This is a noop on supported browsers.
-document.addEventListener('submit', (e) => {
-  const origin = e.composedPath()[0];
-  if (isFormMethodDialog(origin)) {
-    e.preventDefault();
-  }
-});
-
 
 const mainSymbol = Symbol('mainElement');
 const outerSymbol = Symbol('outerElement');

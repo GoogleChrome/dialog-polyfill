@@ -4,18 +4,29 @@ import {isFormMethodDialog, findNearestDialog} from './dom.js';
 /**
  * Makes sure that `form.method` can return "dialog" if required. It's masked by browsers as they
  * treat it as an invalid state.
+ *
+ * @return {boolean} whether polyfilling was needed
  */
 export function ensureFormMethodDialog() {
   const testForm = document.createElement('form');
   testForm.setAttribute('method', 'dialog');
   if (testForm.method === 'dialog') {
-    return;  // great
+    return false;  // great
   }
+
+  // If we're being polyfilled, also disable the default action (which is to actually submit the
+  // form via GET or POST).)
+  document.addEventListener('submit', (e) => {
+    const origin = e.composedPath()[0];
+    if (isFormMethodDialog(origin)) {
+      e.preventDefault();
+    }
+  });
 
   const prop = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, 'method');
   if (!prop) {
     // nb. Some older iOS and older PhantomJS fail to return the descriptor. Ignore.
-    return;
+    return true;
   }
 
   const {get: realGet, set: realSet} = prop;
@@ -35,6 +46,7 @@ export function ensureFormMethodDialog() {
   };
 
   Object.defineProperty(HTMLFormElement.prototype, 'method', prop);
+  return true;
 }
 
 
