@@ -194,7 +194,9 @@ function dialogPolyfillInfo(dialog) {
 
   this.backdrop_ = document.createElement('div');
   this.backdrop_.className = 'backdrop';
-  this.backdrop_.addEventListener('click', this.backdropClick_.bind(this));
+  this.backdrop_.addEventListener('mouseup'  , this.backdropMouseEvent_.bind(this));
+  this.backdrop_.addEventListener('mousedown', this.backdropMouseEvent_.bind(this));
+  this.backdrop_.addEventListener('click'    , this.backdropMouseEvent_.bind(this));
 }
 
 dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
@@ -247,12 +249,12 @@ dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
   },
 
   /**
-   * Handles clicks on the fake .backdrop element, redirecting them as if
+   * Handles mouse events ('mouseup', 'mousedown', 'click') on the fake .backdrop element, redirecting them as if
    * they were on the dialog itself.
    *
    * @param {!Event} e to redirect
    */
-  backdropClick_: function(e) {
+  backdropMouseEvent_: function(e) {
     if (!this.dialog_.hasAttribute('tabindex')) {
       // Clicking on the backdrop should move the implicit cursor, even if dialog cannot be
       // focused. Create a fake thing to focus on. If the backdrop was _before_ the dialog, this
