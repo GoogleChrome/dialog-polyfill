@@ -1,6 +1,6 @@
 {
   "name": "dialog-polyfill",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Polyfill for the dialog element",
   "main": "dist/dialog-polyfill.js",
   "module": "dist/dialog-polyfill.esm.js",

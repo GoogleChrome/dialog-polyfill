@@ -565,24 +565,26 @@ dialogPolyfill.DialogManager.prototype.containedByTopDialog_ = function(candidat
 };
 
 dialogPolyfill.DialogManager.prototype.handleFocus_ = function(event) {
-  if (this.containedByTopDialog_(event.target)) { return; }
+  var target = event.composedPath ? event.composedPath()[0] : event.target;
+
+  if (this.containedByTopDialog_(target)) { return; }
 
   if (document.activeElement === document.documentElement) { return; }
 
   event.preventDefault();
   event.stopPropagation();
-  safeBlur(/** @type {Element} */ (event.target));
+  safeBlur(/** @type {Element} */ (target));
 
   if (this.forwardTab_ === undefined) { return; }  // move focus only from a tab key
 
   var dpi = this.pendingDialogStack[0];
   var dialog = dpi.dialog;
-  var position = dialog.compareDocumentPosition(event.target);
+  var position = dialog.compareDocumentPosition(target);
   if (position & Node.DOCUMENT_POSITION_PRECEDING) {
     if (this.forwardTab_) {
       // forward
       dpi.focus_();
-    } else if (event.target !== document.documentElement) {
+    } else if (target !== document.documentElement) {
       // backwards if we're not already focused on <html>
       document.documentElement.focus();
     }
