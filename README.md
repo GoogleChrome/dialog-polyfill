@@ -1,5 +1,5 @@
 dialog-polyfill.js is a polyfill for `<dialog>` and `<form method="dialog">`.
-Check out [some demos](http://demo.agektmr.com/dialog/)!
+Check out [some demos](https://googlechrome.github.io/dialog-polyfill/)!
 
 `<dialog>` is an element for a popup box in a web page, including a modal option which will make the rest of the page inert during use.
 This could be useful to block a user's interaction until they give you a response, or to confirm an action.
@@ -16,7 +16,7 @@ You may optionally install via NPM -
 
 There are several ways that to include the dialog polyfill:
 
-* include `dialog-polyfill.js` script directly in your HTML, which exposes a global `dialogPolyfill` function.
+* include `dist/dialog-polyfill.js` script directly in your HTML, which exposes a global `dialogPolyfill` function.
 * `import` (es modules)
 * `require` (commonjs/node)
 
@@ -39,11 +39,13 @@ const dialogPolyfill = require('dialog-polyfill')
 
 ### Supports
 
-This polyfill works on modern versions of all major browsers. It also supports IE9 and above.
+This polyfill works on modern versions of all major browsers.
+It also supports IE9 and above.
+It can work when used inside Shadow DOM, but it's not recommended.
 
 ### Steps
 
-1. Include the CSS in the `<head>` of your document, and the Javascript anywhere before referencing `dialogPolyfill`.
+1. Include the CSS in the `<head>` of your document, and the JS anywhere before referencing `dialogPolyfill`.
 2. Create your dialog elements within the document. See [limitations](#limitations) for more details.
 3. Register the elements using `dialogPolyfill.registerDialog()`, passing it one node at a time. This polyfill won't replace native support.
 4. Use your `<dialog>` elements!
@@ -65,7 +67,7 @@ This polyfill works on modern versions of all major browsers. It also supports I
   <script>
     var dialog = document.querySelector('dialog');
     dialogPolyfill.registerDialog(dialog);
-    // Now dialog acts like a native <dialog>.
+    // Now dialog always acts like a native <dialog>.
     dialog.showModal();
   </script>
 </body>
@@ -113,6 +115,9 @@ dialog {
   transform: translate(0, -50%);
 }
 ```
+
+This is also provided as a helper CSS class in the polyfill CSS, `.fixed`.
+You can apply by using HTML like `<dialog class="fixed">`.
 
 ## Extensions
 
