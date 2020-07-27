@@ -1,0 +1,210 @@
+<!--
+Copyright 2020 Google LLC.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dialog and polyfill demos</title> 
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="dist/dialog-polyfill.js"></script>
+  <link rel="stylesheet" href="dist/dialog-polyfill.css" />
+  <style>
+
+.demo {
+  border-top: 1px solid #ccc;
+  padding-top: 16px;
+  margin: 16px 0;
+}
+
+.demo button {
+  margin-right: 12px;
+}
+
+template {
+  display: none !important;  /* in case we're loaded in an ancient browser */
+}
+
+*[hidden] {
+  display: none !important;
+}
+
+dialog.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 90%;
+  max-width: 240px;
+  bottom: 0;
+  margin: 0;
+  height: 100%;
+  border: none;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.125);
+}
+
+  </style>
+</head>
+<body>
+
+<h1>HTML Dialog Demos</h1>
+
+<p>This page demonstrates HTML's <code>&lt;dialog&gt;</code> element. If your browser does not have native support, then support is provided by the <a href="https://github.com/GoogleChrome/dialog-polyfill">polyfill</a>.</p>
+
+<p hidden style="color: red;" id="error"></p>
+
+<p><strong>Native support: <span id="support"></span></strong></p>
+
+<template id="demo-modal">
+  <p>I'm a modal dialog! This blocks the page from being accessed behind me, and is a core reason <code>&lt;dialog&gt;</code> is useful.</p>
+  <p>You can also hit the <code>ESC</code> on your keyboard to close the top-most modal dialog.</p>
+</template>
+
+<template id="demo-nonmodal">
+  <p>This dialog opens but does not block the page from being accessed. It was opened with <code>dialog.show()</code>.</p>
+</template>
+
+<template id="demo-form">
+  <p>Dialog adds a new HTML form type: <code>&lt;form method="dialog"&gt;</code>.</p>
+  <p>Submitting the form doesn't submit to a new page, but rather, closes the dialog by default.</p>
+  <p>(It generates a <code>submit</code> event, which if not prevented, closes the dialog.)</p>
+  <p>Try clicking on one of the buttons below!</p>
+
+  <form method="dialog">
+    <label>Enter an ice-cream flavor: <input type="text" name="icecream" placeholder="ice-cream name" /></label>
+    <input type="submit" value="Vote for it" />
+    <input type="submit" value="Vote against it" />
+  </form>
+</template>
+
+<template id="demo-noesc">
+  <p>This dialog adds a handler on its <code>cancel</code> event, preventing it. This stops the <code>ESC</code> key from closing the dialog.</p>
+  <p>You have to click the button below (or you could not have a button, and only close the dialog some other way).</p>
+</template>
+
+<template id="demo-multiple">
+  <p>This shows opening multiple modal dialogs.</p>
+</template>
+
+<template id="demo-sidebar">
+  <p>This repurposes a <code>dialog</code> as a sidebar!</p>
+  <p>While the dialog, by default, shows centered where it was opened, it's easy to place it in fixed positions on your page.</p>
+</template>
+
+<script>
+window.addEventListener('error', function(event) {
+  var errorNode = document.getElementById('error');
+  errorNode.textContent = event.error.toString();
+  errorNode.removeAttribute('hidden');
+});
+</script>
+<script>
+(function() {
+
+const supportNode = document.getElementById('support');
+const testDialog = document.createElement('dialog');
+if (testDialog.showModal) {
+  supportNode.style.color = 'blue';
+  supportNode.textContent = 'YES';
+} else {
+  supportNode.style.color = 'red';
+  supportNode.textContent = 'NO';
+}
+
+function createDemo(title, content, options) {
+  options = Object.assign({
+    modal: true,
+    close: true,
+    className: '',
+  }, options);
+
+  const dialog = document.createElement('dialog');
+  dialogPolyfill.registerDialog(dialog);
+  if (typeof content === 'string') {
+    dialog.innerHTML = content;
+  } else {
+    dialog.append(content);
+  }
+  if (options.className) {
+    dialog.className = options.className;
+  }
+
+  const button = createButton('Show', options.modal ? () => dialog.showModal() : () => dialog.show());
+  const description = Object.assign(document.createElement('span'), {textContent: title});
+
+  const holder = Object.assign(document.createElement('div'), {className: 'demo'});
+  holder.append(dialog, button, description);
+
+  if (options.close) {
+    dialog.append(createButton('Close', () => dialog.close()));
+  }
+
+  document.body.append(holder);
+  return dialog;
+}
+
+function createButton(title, handler) {
+  const button = document.createElement('button');
+  button.textContent = title;
+  button.addEventListener('click', handler);
+  return button;
+}
+
+function fromTemplate(id) {
+  const template = document.getElementById(id);
+  return template.content.cloneNode(true);
+}
+
+// Demos below.
+
+createDemo('Basic modal', fromTemplate('demo-modal'));
+createDemo('Basic non-modal', fromTemplate('demo-nonmodal'), {modal: false});
+
+const demoFormDialog = createDemo('Dialog form', fromTemplate('demo-form'), {close: false});
+const parentDemo = demoFormDialog.parentNode;
+const resultNode = document.createElement('span');
+parentDemo.append(resultNode);
+demoFormDialog.addEventListener('close', (ev) => {
+  if (demoFormDialog.returnValue) {
+    resultNode.textContent = `, closed with return value: ${demoFormDialog.returnValue}`;
+  }
+});
+
+const demoNoEscape = createDemo('Prevent ESC key', fromTemplate('demo-noesc'));
+demoNoEscape.addEventListener('cancel', (ev) => {
+  ev.preventDefault();
+});
+
+const demoMultiple = createDemo('Multiple modals', fromTemplate('demo-multiple'));
+const createAnotherModal = (count = 1) => {
+  const dialog = document.createElement('dialog');
+  dialogPolyfill.registerDialog(dialog);
+
+  const notes = Object.assign(document.createElement('p'), {textContent: `Modal ${count}`});
+  const buttonMore = createButton(`Open Another Modal (${count})`, createAnotherModal.bind(null, count + 1));
+  const buttonClose = createButton('Close', () => dialog.close());
+
+  dialog.append(notes, buttonMore, buttonClose);
+
+  document.body.append(dialog);
+  dialog.showModal();
+};
+demoMultiple.prepend(createButton('Open Another Modal', () => createAnotherModal()))
+
+createDemo('Dialog as sidebar', fromTemplate('demo-sidebar'), {className: 'sidebar'});
+
+}());
+</script>
+
+</body>
+</html>
