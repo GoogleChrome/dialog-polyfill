@@ -54,6 +54,9 @@ dialog.sidebar {
 }
 
   </style>
+  <style id="backdrop-style">
+
+  </style>
 </head>
 <body>
 
@@ -101,6 +104,13 @@ dialog.sidebar {
   <p>While the dialog, by default, shows centered where it was opened, it's easy to place it in fixed positions on your page.</p>
 </template>
 
+<template id="demo-backdrop">
+  <p>Click the backdrop of the dialog to change its color.</p>
+  <p>This works by adding a click handler on the <code>&lt;dialog&gt;</code> but wrapping the normal contents with another element.
+    If clicks are detected on the dialog directly, then we know the backdrop was clicked.</p>
+  <p>See the polyfill README on how to style the backdrop itself.</p>
+</template>
+
 <script>
 window.addEventListener('error', function(event) {
   var errorNode = document.getElementById('error');
@@ -126,14 +136,21 @@ function createDemo(title, content, options) {
     modal: true,
     close: true,
     className: '',
+    wrap: false,
   }, options);
 
   const dialog = document.createElement('dialog');
   dialogPolyfill.registerDialog(dialog);
+
+  const dialogContent = options.wrap ? document.createElement('div') : dialog;
+  if (dialogContent !== dialog) {
+    dialog.append(dialogContent);
+  }
+
   if (typeof content === 'string') {
-    dialog.innerHTML = content;
+    dialogContent.innerHTML = content;
   } else {
-    dialog.append(content);
+    dialogContent.append(content);
   }
   if (options.className) {
     dialog.className = options.className;
@@ -146,7 +163,7 @@ function createDemo(title, content, options) {
   holder.append(dialog, button, description);
 
   if (options.close) {
-    dialog.append(createButton('Close', () => dialog.close()));
+    dialogContent.append(createButton('Close', () => dialog.close()));
   }
 
   document.body.append(holder);
@@ -202,6 +219,27 @@ const createAnotherModal = (count = 1) => {
 demoMultiple.prepend(createButton('Open Another Modal', () => createAnotherModal()))
 
 createDemo('Dialog as sidebar', fromTemplate('demo-sidebar'), {className: 'sidebar'});
+
+const demoBackdrop = createDemo('Backdrop demo', fromTemplate('demo-backdrop'), {className: 'backdrop-demo', wrap: true});
+const updateBackdrop = (ev) => {
+  if (ev && ev.target !== demoBackdrop) {
+    return;
+  }
+  const styleNode = document.getElementById('backdrop-style');
+  const color = `hsla(${Math.random() * 360}, 100%, 85%, 0.5)`;
+  styleNode.textContent = `
+dialog.backdrop-demo + .backdrop {
+  background: ${color};
+  cursor: pointer;
+}
+dialog.backdrop-demo::backdrop {
+  background: ${color};
+  cursor: pointer;
+}
+  `;
+};
+demoBackdrop.addEventListener('click', updateBackdrop);
+updateBackdrop();
 
 }());
 </script>
