@@ -12,6 +12,22 @@ if (!supportCustomEvent || typeof supportCustomEvent === 'object') {
 }
 
 /**
+ * Dispatches the passed event to both an "on<type>" handler as well as via the
+ * normal dispatch operation. Does not bubble.
+ *
+ * @param {!EventTarget} target
+ * @param {!Event} event
+ * @return {boolean}
+ */
+function safeDispatchEvent(target, event) {
+  var check = 'on' + event.type.toLowerCase();
+  if (typeof target[check] === 'function') {
+    target[check](event);
+  }
+  return target.dispatchEvent(event);
+}
+
+/**
  * @param {Element} el to check for stacking context
  * @return {boolean} whether this el or its parents creates a stacking context
  */
@@ -377,7 +393,7 @@ dialogPolyfillInfo.prototype = /** @type {HTMLDialogElement.prototype} */ ({
       bubbles: false,
       cancelable: false
     });
-    this.dialog_.dispatchEvent(closeEvent);
+    safeDispatchEvent(this.dialog_, closeEvent);
   }
 
 });
@@ -607,7 +623,7 @@ dialogPolyfill.DialogManager.prototype.handleKey_ = function(event) {
       cancelable: true
     });
     var dpi = this.pendingDialogStack[0];
-    if (dpi && dpi.dialog.dispatchEvent(cancelEvent)) {
+    if (dpi && safeDispatchEvent(dpi.dialog, cancelEvent)) {
       dpi.dialog.close();
     }
   } else if (event.keyCode === 9) {

@@ -532,13 +532,26 @@ void function() {
       dialog.showModal();
       dialog.dispatchEvent(createKeyboardEvent(27));
       assert.equal(cancelFired, 1, 'expected cancel to be fired');
-      assert.isFalse(dialog.open), 'esc should close modal again';
+      assert.isFalse(dialog.open, 'esc should close modal again');
 
       // Sanity-check that non-modals aren't effected.
       dialog.show();
       dialog.dispatchEvent(createKeyboardEvent(27));
       assert.isTrue(dialog.open, 'esc should only close modal dialog');
       assert.equal(cancelFired, 1);
+    });
+    test('cancel event via oncancel', function() {
+      dialog.showModal();
+
+      var cancelFired = 0;
+      dialog.oncancel = function(event) {
+        ++cancelFired;
+        event.preventDefault();
+      };
+
+      dialog.dispatchEvent(createKeyboardEvent(27));
+      assert.equal(cancelFired, 1, 'expected cancel to be fired');
+      assert.isTrue(dialog.open, 'behavior should be prevented');
     });
     test('overlay click is prevented', function() {
       dialog.showModal();
