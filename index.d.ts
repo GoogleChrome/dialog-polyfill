@@ -14,4 +14,4 @@ declare global {
 /**
  * If used as ESM, then we export the type of "DialogPolyfillType" as the default type.
  */
-export default DialogPolyfill;
+export default DialogPolyfillType;
