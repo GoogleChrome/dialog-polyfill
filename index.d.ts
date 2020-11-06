@@ -12,6 +12,7 @@ declare global {
 }
 
 /**
- * If used as ESM, then we export the type of "DialogPolyfillType" as the default type.
+ * If used as ESM, then we export a const of type "DialogPolyfillType" as the default.
  */
+declare const dialogPolyfill: DialogPolyfillType
 export default DialogPolyfillType;
