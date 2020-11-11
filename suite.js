@@ -753,6 +753,45 @@ void function() {
       assert.equal(dialog2.returnValue, 'dialog2 default close value',
           'second dialog shouldn\'t reuse formSubmitter');
     });
+    test('form submit inside SD', function(done) {
+      if (!window.ShadowRoot) {
+        return;
+      }
+
+      var holder = document.createElement('div');
+      document.body.append(holder);
+      cleanup(holder);
+
+      var root = holder.attachShadow({mode: 'open'});
+      var rootHolder = document.createElement('div');
+      root.append(rootHolder);
+      rootHolder.append(dialog);
+
+      var iframe = document.createElement('iframe');
+      iframe.setAttribute('name', 'blah');
+      document.body.append(iframe);
+      cleanup(iframe);
+
+      var form = document.createElement('form');
+      form.setAttribute('method', 'dialog');
+      form.setAttribute('target', 'blah');
+      form.setAttribute('action', '/test-invalid.html');
+      dialog.append(form);
+
+      var button = document.createElement('button');
+      button.value = 'from form1: first value';
+      form.append(button);
+      dialog.showModal();
+
+      console.warn('before button pressed', iframe.contentWindow.location.href);
+      button.click();
+
+      // TODO(samthor): this is a bit gross as this will pass if the button is not pressed at all.
+      window.setTimeout(() => {
+        assert.notStrictEqual(iframe.contentWindow.location.pathname, '/test-invalid.html');
+        done();
+      }, 500);
+    });
   });
 
   suite('order', function() {
