@@ -351,7 +351,11 @@ void function() {
       dialog.showModal();
       sub.show();
 
+      // trick Safari into allowing focus
+      input.offsetLeft;
       input.focus();
+      input.offsetLeft;
+
       assert.equal(input, document.activeElement);
     });
     test('clear focus when nothing focusable in modal', function() {
@@ -757,6 +761,7 @@ void function() {
       if (!window.ShadowRoot) {
         return;
       }
+      const iframeName = 'iframe_secret_blah';
 
       var holder = document.createElement('div');
       document.body.append(holder);
@@ -768,13 +773,13 @@ void function() {
       rootHolder.append(dialog);
 
       var iframe = document.createElement('iframe');
-      iframe.setAttribute('name', 'blah');
+      iframe.setAttribute('name', iframeName);
       document.body.append(iframe);
       cleanup(iframe);
 
       var form = document.createElement('form');
       form.setAttribute('method', 'dialog');
-      form.setAttribute('target', 'blah');
+      form.setAttribute('target', iframeName);
       form.setAttribute('action', '/test-invalid.html');
       dialog.append(form);
 
@@ -783,14 +788,18 @@ void function() {
       form.append(button);
       dialog.showModal();
 
-      console.warn('before button pressed', iframe.contentWindow.location.href);
+      iframe.addEventListener('load', function() {
+        assert.fail('should not load a new page');
+      });
       button.click();
 
-      // TODO(samthor): this is a bit gross as this will pass if the button is not pressed at all.
-      window.setTimeout(() => {
-        assert.notStrictEqual(iframe.contentWindow.location.pathname, '/test-invalid.html');
+      window.setTimeout(function() {
+        assert.isFalse(dialog.open, 'dialog should be closed by button');
+        if (iframe.contentWindow && iframe.contentWindow.location) {
+          assert.notStrictEqual(iframe.contentWindow.location.pathname, '/test-invalid.html');
+        }
         done();
-      }, 500);
+      }, 50);
     });
   });
 

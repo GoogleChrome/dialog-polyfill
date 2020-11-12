@@ -154,6 +154,47 @@ function isConnected(element) {
 }
 
 /**
+ * @param {!Event} event
+ */
+function maybeHandleSubmit(event) {
+  if (event.defaultPrevented) {
+    return;
+  }
+  var form = /** @type {!HTMLFormElement} */ (event.target);
+  if (!isFormMethodDialog(form)) {
+    return;
+  }
+  event.preventDefault();
+
+  // We'd have a value if we clicked on an imagemap.
+  var value = dialogPolyfill.useValue;
+  var submitter = dialogPolyfill.formSubmitter || event.submitter;
+  if (!value) {
+    if (!submitter) {
+      var root = ('getRootNode' in form && form.getRootNode() || document);
+      var activeElement = root.activeElement;
+      if (activeElement) {
+        submitter = event.submitter = activeElement;
+      }
+    }
+    if (submitter) {
+      value = submitter.value;
+    }
+  }
+
+  const dialog = findNearestDialog(form);
+  if (!dialog) {
+    return;
+  }
+
+  if (submitter) {
+    dialog.close(value);
+  } else {
+    dialog.close();
+  }
+}
+
+/**
  * @param {!HTMLDialogElement} dialog to upgrade
  * @constructor
  */
@@ -170,6 +211,8 @@ function dialogPolyfillInfo(dialog) {
   dialog.show = this.show.bind(this);
   dialog.showModal = this.showModal.bind(this);
   dialog.close = this.close.bind(this);
+
+  dialog.addEventListener('submit', maybeHandleSubmit, false);
 
   if (!('returnValue' in dialog)) {
     dialog.returnValue = '';
@@ -729,6 +772,10 @@ if (window.HTMLDialogElement === undefined) {
     if (ev.defaultPrevented) { return; }  // e.g. a submit which prevents default submission
 
     var target = /** @type {Element} */ (ev.target);
+    if ('composedPath' in ev) {
+      var path = ev.composedPath();
+      target = path.shift() || target;
+    }
     if (!target || !isFormMethodDialog(target.form)) { return; }
 
     var valid = (target.type === 'submit' && ['button', 'input'].indexOf(target.localName) > -1);
@@ -758,32 +805,6 @@ if (window.HTMLDialogElement === undefined) {
     dialog && dialog.close();
   };
   HTMLFormElement.prototype.submit = replacementFormSubmit;
-
-  /**
-   * Global form 'dialog' method handler. Closes a dialog correctly on submit
-   * and possibly sets its return value.
-   */
-  document.addEventListener('submit', function(ev) {
-    if (ev.defaultPrevented) { return; }  // e.g. a submit which prevents default submission
-
-    var form = /** @type {HTMLFormElement} */ (ev.target);
-    if (!isFormMethodDialog(form)) { return; }
-    ev.preventDefault();
-
-    var dialog = findNearestDialog(form);
-    if (!dialog) { return; }
-
-    // Forms can only be submitted via .submit() or a click (?), but anyway: sanity-check that
-    // the submitter is correct before using its value as .returnValue.
-    var s = dialogPolyfill.formSubmitter;
-    if (s && s.form === form) {
-      dialog.close(dialogPolyfill.useValue || s.value);
-    } else {
-      dialog.close();
-    }
-    dialogPolyfill.formSubmitter = null;
-
-  }, false);
 }
 
 export default dialogPolyfill;

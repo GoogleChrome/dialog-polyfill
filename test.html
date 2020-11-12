@@ -19,7 +19,12 @@
 <script src="node_modules/mocha/mocha.js"></script>
 <script src="node_modules/chai/chai.js"></script>
 <link rel="stylesheet" type="text/css" href="dist/dialog-polyfill.css" />
-<script src="dist/dialog-polyfill.js"></script>
+<script type="module">
+
+import dialogPolyfill from './index.js';
+window.dialogPolyfill = dialogPolyfill;
+
+</script>
 <script>
 
 var assert = chai.assert;
