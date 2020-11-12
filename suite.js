@@ -14,7 +14,6 @@
  * the License.
  */
 
-
 void function() {
 
   /**
@@ -789,7 +788,10 @@ void function() {
       dialog.showModal();
 
       iframe.addEventListener('load', function() {
-        assert.fail('should not load a new page');
+        var href = iframe.contentWindow.location.href;
+        if (href !== 'about:blank') {
+          assert.fail('should not load a new page: ' + href);
+        }
       });
       button.click();
 
@@ -800,6 +802,69 @@ void function() {
         }
         done();
       }, 50);
+    });
+    test('form submit with formmethod', function(done) {
+      const iframeName = 'formmethod_test_frame';
+
+      var iframe = document.createElement('iframe');
+      iframe.setAttribute('name', iframeName);
+      document.body.append(iframe);
+      cleanup(iframe);
+
+      var form = document.createElement('form');
+      form.setAttribute('method', 'dialog');
+      form.setAttribute('target', iframeName);
+      form.setAttribute('action', '/test-invalid.html');
+      dialog.append(form);
+      dialog.show();
+
+      var button = document.createElement('button');
+      button.setAttribute('formmethod', 'get');
+      form.append(button);
+      button.value = '123';
+      button.textContent = 'Long button';
+
+      var timeout = window.setTimeout(function() {
+        assert.fail('page should load (form submit with formmethod)');
+      }, 500);
+      iframe.addEventListener('load', function() {
+        window.clearTimeout(timeout);
+        assert.isTrue(dialog.open);
+        done();
+      });
+      button.click();
+    });
+    test('form method="dialog" prevented outside dialog', function(done) {
+      const iframeName = 'outside_dialog_test';
+
+      var iframe = document.createElement('iframe');
+      iframe.setAttribute('name', iframeName);
+      document.body.append(iframe);
+      cleanup(iframe);
+
+      var form = document.createElement('form');
+      form.setAttribute('method', 'dialog');
+      form.setAttribute('target', iframeName);
+      form.setAttribute('action', '/test-invalid.html');
+      document.body.append(form);
+      cleanup(form);
+
+      iframe.addEventListener('load', function() {
+        if (iframe.contentWindow.location.href !== 'about:blank') {
+          assert.fail('should not load a new page: ' + iframe.contentWindow.location.href);
+        }
+      });
+
+      form.submit();
+
+      // Try with an actual button, too.
+      var button = document.createElement('button');
+      form.append(button);
+      button.click();
+
+      var timeout = window.setTimeout(function() {
+        done();
+      }, 1000);
     });
   });
 

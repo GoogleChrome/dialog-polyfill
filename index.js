@@ -157,36 +157,58 @@ function isConnected(element) {
 /**
  * @param {!Event} event
  */
+function findFormSubmitter(event) {
+  if (event.submitter) {
+    return event.submitter;
+  }
+
+  var form = event.target;
+  if (!(form instanceof HTMLFormElement)) {
+    return null;
+  }
+
+  var submitter = dialogPolyfill.formSubmitter;
+  if (!submitter) {
+    var target = event.target;
+    var root = ('getRootNode' in target && target.getRootNode() || document);
+    submitter = root.activeElement;
+  }
+
+  if (submitter.form !== form) {
+    return null;
+  }
+  return submitter;
+}
+
+/**
+ * @param {!Event} event
+ */
 function maybeHandleSubmit(event) {
   if (event.defaultPrevented) {
     return;
   }
   var form = /** @type {!HTMLFormElement} */ (event.target);
-  if (!isFormMethodDialog(form)) {
-    return;
-  }
-  event.preventDefault();
 
   // We'd have a value if we clicked on an imagemap.
   var value = dialogPolyfill.useValue;
-  var submitter = dialogPolyfill.formSubmitter || event.submitter;
-  if (!value) {
-    if (!submitter) {
-      var root = ('getRootNode' in form && form.getRootNode() || document);
-      var activeElement = root.activeElement;
-      if (activeElement) {
-        submitter = event.submitter = activeElement;
-      }
-    }
-    if (submitter) {
-      value = submitter.value;
-    }
+  var submitter = findFormSubmitter(event);
+  if (value === null && submitter) {
+    value = submitter.value;
   }
 
-  const dialog = findNearestDialog(form);
+  // There should always be a dialog as this handler is added specifically on them, but check just
+  // in case.
+  var dialog = findNearestDialog(form);
   if (!dialog) {
     return;
   }
+
+  // Prefer formmethod on the button.
+  var formmethod = submitter && submitter.getAttribute('formmethod') || form.getAttribute('method');
+  if (formmethod !== 'dialog') {
+    return;
+  }
+  event.preventDefault();
 
   if (submitter) {
     dialog.close(value);
@@ -794,6 +816,24 @@ if (window.HTMLDialogElement === undefined) {
     dialogPolyfill.formSubmitter = target;
 
   }, false);
+
+  /**
+   * Global 'submit' handler. This handles submits of `method="dialog"` which are invalid, i.e.,
+   * outside a dialog. They get prevented.
+   */
+  document.addEventListener('submit', function(ev) {
+    var form = ev.target;
+    var dialog = findNearestDialog(form);
+    if (dialog) {
+      return;  // ignore, handle there
+    }
+
+    var submitter = findFormSubmitter(ev);
+    var formmethod = submitter && submitter.getAttribute('formmethod') || form.getAttribute('method');
+    if (formmethod === 'dialog') {
+      ev.preventDefault();
+    }
+  });
 
   /**
    * Replace the native HTMLFormElement.submit() method, as it won't fire the
