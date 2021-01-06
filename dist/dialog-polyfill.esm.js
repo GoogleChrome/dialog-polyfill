@@ -64,7 +64,13 @@ function findNearestDialog(el) {
     if (el.localName === 'dialog') {
       return /** @type {HTMLDialogElement} */ (el);
     }
-    el = el.parentElement;
+    if (el.parentElement) {
+      el = el.parentElement;
+    } else if (el.parentNode) {
+      el = el.parentNode.host;
+    } else {
+      el = null;
+    }
   }
   return null;
 }
