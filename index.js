@@ -175,13 +175,13 @@ function findFormSubmitter(event) {
   }
 
   var submitter = dialogPolyfill.formSubmitter;
-  if (!submitter || submitter.form !== form) {
+  if (!submitter) {
     var target = event.target;
     var root = ('getRootNode' in target && target.getRootNode() || document);
     submitter = root.activeElement;
   }
 
-  if (submitter.form !== form) {
+  if (!submitter || submitter.form !== form) {
     return null;
   }
   return submitter;
