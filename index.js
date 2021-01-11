@@ -154,7 +154,7 @@ function findFocusableElementWithin(hostElement) {
 /**
  * Determines if an element is attached to the DOM.
  * @param {Element} element to check
- * @return {Boolean} whether the element is in DOM
+ * @return {boolean} whether the element is in DOM
  */
 function isConnected(element) {
   return element.isConnected || document.body.contains(element);
@@ -162,6 +162,7 @@ function isConnected(element) {
 
 /**
  * @param {!Event} event
+ * @return {?Element}
  */
 function findFormSubmitter(event) {
   if (event.submitter) {
@@ -174,7 +175,7 @@ function findFormSubmitter(event) {
   }
 
   var submitter = dialogPolyfill.formSubmitter;
-  if (!submitter) {
+  if (!submitter || submitter.form !== form) {
     var target = event.target;
     var root = ('getRootNode' in target && target.getRootNode() || document);
     submitter = root.activeElement;
@@ -196,7 +197,7 @@ function maybeHandleSubmit(event) {
   var form = /** @type {!HTMLFormElement} */ (event.target);
 
   // We'd have a value if we clicked on an imagemap.
-  var value = dialogPolyfill.useValue;
+  var value = dialogPolyfill.imagemapUseValue;
   var submitter = findFormSubmitter(event);
   if (value === null && submitter) {
     value = submitter.value;
@@ -216,7 +217,8 @@ function maybeHandleSubmit(event) {
   }
   event.preventDefault();
 
-  if (submitter) {
+  if (value != null) {
+    // nb. we explicitly check against null/undefined
     dialog.close(value);
   } else {
     dialog.close();
@@ -754,7 +756,7 @@ dialogPolyfill.DialogManager.prototype.removeDialog = function(dpi) {
 
 dialogPolyfill.dm = new dialogPolyfill.DialogManager();
 dialogPolyfill.formSubmitter = null;
-dialogPolyfill.useValue = null;
+dialogPolyfill.imagemapUseValue = null;
 
 /**
  * Installs global handlers, such as click listers and native method overrides. These are needed
@@ -799,7 +801,7 @@ if (window.HTMLDialogElement === undefined) {
    */
   document.addEventListener('click', function(ev) {
     dialogPolyfill.formSubmitter = null;
-    dialogPolyfill.useValue = null;
+    dialogPolyfill.imagemapUseValue = null;
     if (ev.defaultPrevented) { return; }  // e.g. a submit which prevents default submission
 
     var target = /** @type {Element} */ (ev.target);
@@ -813,7 +815,7 @@ if (window.HTMLDialogElement === undefined) {
     if (!valid) {
       if (!(target.localName === 'input' && target.type === 'image')) { return; }
       // this is a <input type="image">, which can submit forms
-      dialogPolyfill.useValue = ev.offsetX + ',' + ev.offsetY;
+      dialogPolyfill.imagemapUseValue = ev.offsetX + ',' + ev.offsetY;
     }
 
     var dialog = findNearestDialog(target);
