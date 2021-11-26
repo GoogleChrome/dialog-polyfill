@@ -126,7 +126,7 @@ function isFormMethodDialog(el) {
 function findFocusableElementWithin(hostElement) {
   // Note that this is 'any focusable area'. This list is probably not exhaustive, but the
   // alternative involves stepping through and trying to focus everything.
-  var opts = ['button', 'input', 'keygen', 'select', 'textarea'];
+  var opts = ['button', 'input', 'keygen', 'select', 'textarea', 'a[href]', 'area[href]', 'iframe', 'object', 'embed'];
   var query = opts.map(function(el) {
     return el + ':not([disabled])';
   });
