@@ -4,8 +4,14 @@ var dialogPolyfill = {};
 // while also preventing unexpected uses of this package on the server side.
 if (typeof window === 'undefined') {
   function getServerSideThrower(name, isProp) {
+    var error = '';
+    if (isProp) {
+      error = 'Cannot access property `dialogPolyfill.' + name + '` on the server side.';
+    } else {
+      error = 'Cannot execute `dialogPolyfill.' + name + '()` on the server side.';
+    }
     return function() {
-      throw new Error();
+      throw new Error(error);
     }
   }
   dialogPolyfill.registerDialog = getServerSideThrower('registerDialog');
