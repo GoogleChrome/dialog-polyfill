@@ -11,7 +11,9 @@ dialog {
   border: solid;
   padding: 1em;
   background: white;
+  background-color: Canvas;
   color: black;
+  color: CanvasText;  
   display: block;
 }
 
