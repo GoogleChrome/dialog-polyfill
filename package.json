@@ -9,7 +9,7 @@
     "url": "https://github.com/GoogleChrome/dialog-polyfill.git"
   },
   "author": "The Chromium Authors",
-  "license": "BSD",
+  "license": "BSD-3-Clause",
   "homepage": "https://github.com/GoogleChrome/dialog-polyfill",
   "devDependencies": {
     "chai": "^4.2.0",
