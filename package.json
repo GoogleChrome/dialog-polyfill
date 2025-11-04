@@ -3,7 +3,10 @@
   "version": "0.5.6",
   "description": "Polyfill for the dialog element",
   "main": "dist/dialog-polyfill.js",
-  "module": "dist/dialog-polyfill.esm.js",
+  "exports": {
+    "import": "./dist/dialog-polyfill.esm.js",
+    "default": "./dist/dialog-polyfill.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/GoogleChrome/dialog-polyfill.git"
